@@ -3,24 +3,27 @@ from datetime import datetime
 from typing import Optional
 
 class UserBase(BaseModel):
-    email : EmailStr
-    fullname : str
-    
+    email: EmailStr
+    first_name: str
+    last_name: str
+    phone: Optional[str] = None
+    address: Optional[str] = None
     
 class UserCreate(UserBase):
-    password:str
-    
+    password: str
     
 class UserUpdate(BaseModel):
-    fullname: Optional[str]=None
-    email:Optional[EmailStr]=None
-    password: Optional[str]=None
-    
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    email: Optional[EmailStr] = None
+    phone: Optional[str] = None
+    address: Optional[str] = None
+    password: Optional[str] = None
     
 class UserOut(UserBase):
-    id :int
-    is_admin:bool
-    is_active:bool
-    created_at:datetime
+    id: int
+    is_admin: bool
+    is_active: bool
+    created_at: datetime
     
-    model_config =ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True)
