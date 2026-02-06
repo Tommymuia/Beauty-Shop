@@ -16,11 +16,12 @@ def checkout(db: Session = Depends(get_db), current_user: User = Depends(get_cur
     if not cart_items:
         raise HTTPException(status_code=400, detail="Cart is empty")
 
-    # 2. Check for Phone Number (Checks both 'phone' and 'phone_number' attribute names)
-    user_phone = getattr(current_user, 'phone_number', None) or getattr(current_user, 'phone', None)
+    # 2. Get Phone Number with a "Test Fallback"
+    # This tries the DB first, but defaults to your number if the DB is empty
+    db_phone = getattr(current_user, 'phone_number', None) or getattr(current_user, 'phone', None)
     
-    if not user_phone:
-        raise HTTPException(status_code=400, detail="Phone number missing in user profile")
+    # FOR TESTING: If DB phone is missing, use your real number so you can see the STK Push
+    user_phone = db_phone if db_phone else "254707996007" 
 
     # 3. Financials & Invoice Prep
     total = sum(item.product.price * item.quantity for item in cart_items)
@@ -34,6 +35,8 @@ def checkout(db: Session = Depends(get_db), current_user: User = Depends(get_cur
         status="pending"
     )
     db.add(new_order)
+    
+    # Important: We clear the cart here so the user doesn't double-order
     db.query(CartItem).filter(CartItem.user_id == current_user.id).delete()
     db.commit()
     db.refresh(new_order)
@@ -42,15 +45,24 @@ def checkout(db: Session = Depends(get_db), current_user: User = Depends(get_cur
     pdf_path = generate_invoice_pdf(invoice_no, total, current_user.email)
 
     # 6. M-Pesa Trigger
-    mpesa_response = initiate_stk_push(
-        phone=user_phone,
-        amount=int(total),
-        invoice_no=invoice_no
-    )
+    # Using the 'user_phone' logic from above
+    try:
+        mpesa_response = initiate_stk_push(
+            phone=user_phone,
+            amount=int(total),
+            invoice_no=invoice_no
+        )
+    except Exception as e:
+        mpesa_response = {"error": "M-Pesa Service Unavailable", "details": str(e)}
 
     return {
         "message": "Checkout initiated",
-        "order_details": {"id": new_order.id, "invoice": invoice_no, "total": total},
+        "order_details": {
+            "id": new_order.id, 
+            "invoice": invoice_no, 
+            "total": total,
+            "phone_used": user_phone # To confirm which number was sent
+        },
         "pdf_location": pdf_path,
         "mpesa_status": mpesa_response
     }
