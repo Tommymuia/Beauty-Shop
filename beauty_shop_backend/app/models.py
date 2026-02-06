@@ -8,7 +8,8 @@ class User(Base):
     id = Column(Integer, primary_key=True, index=True)
     email = Column(String, unique=True, index=True, nullable=False)
     password = Column(String, nullable=False)
-    is_admin = Column(Boolean, default=False)  # For Admin User Stories
+    phone_number = Column(String, nullable=True)  # Added for M-Pesa integration
+    is_admin = Column(Boolean, default=False)
     
     orders = relationship("Order", back_populates="owner")
     cart_items = relationship("CartItem", back_populates="user")
@@ -46,10 +47,9 @@ class Order(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"))
     total_amount = Column(Float)
-    status = Column(String, default="pending") # e.g., pending, paid, shipped
+    status = Column(String, default="pending") 
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     
-    # Simulating billing/invoice info storage
     invoice_number = Column(String, unique=True)
     billing_address = Column(String, default="123 Beauty Lane, Nairobi")
 
