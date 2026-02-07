@@ -1,9 +1,11 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
-    Database_URL: str
+    DATABASE_URL: str  # FIXED: Database_URL → DATABASE_URL (all caps)
+    SECRET_KEY: str = "your-secret-key-here"
+    ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     
-    # This part tells Pydantic to read the .env file
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
 settings = Settings()

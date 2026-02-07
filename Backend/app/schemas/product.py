@@ -8,17 +8,17 @@ class ProductBase(BaseModel):
     description: Optional[str] = None
     price: Decimal
     stock_qty: int
-    category_id: int
+    category_id: Optional[int] = None
     rating: Optional[float] = 0.0
     reviews_count: Optional[int] = 0
     is_new: Optional[bool] = False
-    
+
 class ProductCreate(ProductBase):
     image_url: Optional[str] = None
-    
+
 class ProductOut(ProductBase):
     id: int
     image_url: Optional[str] = None
-    category: Optional[CategoryOut] = None 
-    
+    category: Optional[CategoryOut] = None
+
     model_config = ConfigDict(from_attributes=True)
