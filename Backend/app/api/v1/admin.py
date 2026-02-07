@@ -19,14 +19,14 @@ def get_dashboard_stats(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    if not current_user.is_Admin:
+    if not getattr(current_user, 'is_admin', False):
         raise HTTPException(status_code=403, detail="Not authorized")
     
     # Get stats
     total_products = db.query(Product).count()
     total_orders = db.query(Order).count()
     total_users = db.query(User).count()
-    total_revenue = db.query(func.sum(Order.total_price)).scalar() or 0
+    total_revenue = db.query(func.sum(Order.total_amount)).scalar() or 0
     
     return {
         "total_products": total_products,
@@ -51,7 +51,7 @@ def get_recent_orders(
         result.append({
             "id": f"ORD-{order.id:03d}",
             "customer": f"{order.user.first_name} {order.user.last_name}",
-            "amount": float(order.total_price),
+            "amount": float(order.total_amount or 0),
             "status": order.status,
             "date": order.created_at.isoformat()
         })
@@ -71,7 +71,7 @@ def get_top_products(
     top_products = db.query(
         Product.name,
         func.sum(OrderItem.quantity).label('total_sales'),
-        func.sum(OrderItem.quantity * OrderItem.price).label('total_revenue')
+        func.sum(OrderItem.quantity * OrderItem.price_at_purchase).label('total_revenue')
     ).join(OrderItem).group_by(Product.id, Product.name).order_by(
         func.sum(OrderItem.quantity).desc()
     ).limit(limit).all()

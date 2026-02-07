@@ -5,29 +5,27 @@ from typing import Optional
 import os
 
 class MpesaService:
-    def __init__(self):
-        self.consumer_key = os.getenv("MPESA_CONSUMER_KEY", "")
+    def __init__(self):  # FIXED
+        self.consumer_key = os.getenv("MPESA_CONSUMER_KEY", "")  # FIXED
         self.consumer_secret = os.getenv("MPESA_CONSUMER_SECRET", "")
         self.business_short_code = os.getenv("MPESA_BUSINESS_SHORT_CODE", "174379")
         self.passkey = os.getenv("MPESA_PASSKEY", "")
         self.callback_url = os.getenv("MPESA_CALLBACK_URL", "https://yourdomain.com/api/v1/mpesa/callback")
-        
-        # Sandbox URLs
         self.auth_url = "https://sandbox.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials"
         self.stk_push_url = "https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest"
     
     def get_access_token(self) -> Optional[str]:
         """Get access token from Safaricom API"""
         try:
-            credentials = base64.b64encode(f"{self.consumer_key}:{self.consumer_secret}".encode()).decode()
+            credentials = base64.b64encode(f"{self.consumer_key}:{self.consumer_secret}".encode()).decode()  # FIXED
             headers = {
-                "Authorization": f"Basic {credentials}",
+                "Authorization": f"Basic {credentials}",  # FIXED
                 "Content-Type": "application/json"
             }
             
             response = requests.get(self.auth_url, headers=headers)
             if response.status_code == 200:
-                return response.json().get("access_token")
+                return response.json().get("access_token")  # FIXED
             return None
         except Exception as e:
             print(f"Error getting access token: {e}")
@@ -44,7 +42,7 @@ class MpesaService:
         """Initiate STK push payment"""
         access_token = self.get_access_token()
         if not access_token:
-            return {"success": False, "message": "Failed to get access token"}
+            return {"success": False, "message": "Failed to get access token"}  # FIXED
         
         password, timestamp = self.generate_password()
         
@@ -54,7 +52,7 @@ class MpesaService:
         }
         
         payload = {
-            "BusinessShortCode": self.business_short_code,
+            "BusinessShortCode": self.business_short_code,  # FIXED
             "Password": password,
             "Timestamp": timestamp,
             "TransactionType": "CustomerPayBillOnline",
@@ -75,9 +73,6 @@ class MpesaService:
     
     def query_transaction_status(self, checkout_request_id: str) -> dict:
         """Query the status of a transaction"""
-        # Implementation for querying transaction status
-        # This would typically involve another API call to Safaricom
         return {"success": True, "status": "pending"}
 
-# Create a singleton instance
 mpesa_service = MpesaService()

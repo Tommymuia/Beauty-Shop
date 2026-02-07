@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import Optional, Any, Dict
+from typing import Optional
 
 class MpesaPaymentRequest(BaseModel):
     order_id: int

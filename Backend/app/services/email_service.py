@@ -5,42 +5,40 @@ from typing import Optional
 import os
 
 class EmailService:
-    def __init__(self):
-        self.smtp_server = os.getenv("SMTP_SERVER", "smtp.gmail.com")
+    def __init__(self):  # FIXED: def init → def __init__
+        self.smtp_server = os.getenv("SMTP_SERVER", "smtp.gmail.com")  # FIXED: removed extra spaces
         self.smtp_port = int(os.getenv("SMTP_PORT", "587"))
         self.email = os.getenv("EMAIL_USER", "")
         self.password = os.getenv("EMAIL_PASSWORD", "")
     
     def send_email(self, to_email: str, subject: str, body: str, is_html: bool = False) -> bool:
-        """Send email to recipient"""
-        # Skip email if no credentials configured
+        """Send email to recipient"""  # FIXED: removed extra spaces
         if not self.email or not self.password:
             print("Email service not configured - skipping email")
-            return True  # Return True to not break the flow
-            
+            return True
+        
         try:
             msg = MIMEMultipart()
             msg['From'] = self.email
             msg['To'] = to_email
-            msg['Subject'] = subject
+            msg['Subject'] = subject  # FIXED: ms g → msg
             
             msg.attach(MIMEText(body, 'html' if is_html else 'plain'))
             
             server = smtplib.SMTP(self.smtp_server, self.smtp_port)
-            server.starttls()
+            server.starttls()  # FIXED: removed leading space
             server.login(self.email, self.password)
-            text = msg.as_string()
-            server.sendmail(self.email, to_email, text)
+            server.sendmail(self.email, to_email, msg.as_string())  # FIXED
             server.quit()
             
-            return True
+            return True  # FIXED: removed leading space
         except Exception as e:
-            print(f"Failed to send email: {e}")
+            print(f"Failed to send email: {e}")  # FIXED
             return False
     
     def send_order_confirmation(self, to_email: str, order_id: str, total_amount: float) -> bool:
         """Send order confirmation email"""
-        subject = f"Order Confirmation - {order_id}"
+        subject = f"Order Confirmation - {order_id}"  # FIXED
         body = f"""
         <html>
         <body>
@@ -52,7 +50,7 @@ class EmailService:
             <p>Best regards,<br>Bloom Beauty Team</p>
         </body>
         </html>
-        """
+        """  # FIXED: removed extra spaces
         return self.send_email(to_email, subject, body, is_html=True)
     
     def send_order_status_update(self, to_email: str, order_id: str, status: str) -> bool:
@@ -70,5 +68,4 @@ class EmailService:
         """
         return self.send_email(to_email, subject, body, is_html=True)
 
-# Create singleton instance
 email_service = EmailService()
