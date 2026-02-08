@@ -62,5 +62,12 @@ def generate_invoice_pdf(invoice_number: str, amount: float, email: str, items: 
     c.drawString(width - 240, total_y, "GRAND TOTAL")
     c.drawRightString(width - 60, total_y, f"KES {amount:,.2f}")
 
+    # Footer
+    footer_y = 30
+    c.setFillColor(brand_color)
+    c.setFont("Helvetica", 9)
+    c.drawString(50, footer_y + 10, "Thank you for shopping with Beauty Shop Ltd!")
+    c.drawString(50, footer_y - 5, "If you have any questions, please contact muiathomas.mt@gmail.com")
+
     c.save()
     return file_path
