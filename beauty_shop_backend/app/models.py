@@ -3,6 +3,7 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from datetime import datetime
 from app.database import Base
+import json
 
 class User(Base):
     __tablename__ = "users"
@@ -34,7 +35,8 @@ class Product(Base):
     name = Column(String, index=True)
     description = Column(Text, nullable=True)
     price = Column(Float)
-    category_id = Column(Integer, ForeignKey("categories.id"))
+    stock_quantity = Column(Integer, default=0)
+    category_id = Column(Integer, ForeignKey("categories.id"), nullable=True)
     
     category = relationship("Category", back_populates="products")
     order_items = relationship("OrderItem", back_populates="product")
@@ -42,20 +44,46 @@ class Product(Base):
 
 class Order(Base):
     __tablename__ = "orders"
-
+    
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"))
+    public_id = Column(String, unique=True, index=True, nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     total_amount = Column(Float)
     invoice_number = Column(String, unique=True, nullable=True)
     status = Column(String, default="pending")
     created_at = Column(DateTime(timezone=True), server_default=func.now())
-    
     mpesa_checkout_id = Column(String, nullable=True)
     mpesa_receipt = Column(String, nullable=True)
     phone_number = Column(String, nullable=True)
+    customer_info = Column(Text, nullable=True)
 
     owner = relationship("User", back_populates="orders")
-    items = relationship("OrderItem", back_populates="order")
+    items = relationship("OrderItem", back_populates="order", cascade="all, delete-orphan")
+
+    def get_customer(self):
+        if self.customer_info:
+            return json.loads(self.customer_info)
+        if self.owner:
+            return {
+                "firstName": self.owner.first_name,
+                "lastName": self.owner.last_name,
+                "email": self.owner.email,
+                "address": self.owner.address,
+                "city": "",
+                "zip": ""
+            }
+        return None
+
+    def get_items(self):
+        return [
+            {
+                "name": item.product.name,
+                "quantity": item.quantity,
+                "price": item.price_at_purchase,
+                "totalPrice": item.quantity * item.price_at_purchase,
+            }
+            for item in self.items
+        ]
 
 class OrderItem(Base):
     __tablename__ = "order_items"

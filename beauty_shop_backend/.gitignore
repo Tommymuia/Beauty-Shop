@@ -1,0 +1,58 @@
+# --- Python / Virtual Environments ---
+venv/
+.venv/
+env/
+bin/
+lib/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# --- Caching ---
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# --- Environment Variables (CRITICAL) ---
+.env
+.flaskenv
+env.txt
+
+# --- Databases (Postgres/SQLite) ---
+# Note: Postgres usually runs as a service, but if you export data:
+*.sql
+*.dump
+.pgpass
+
+# If you use SQLite for local testing:
+*.db
+*.sqlite3
+
+# --- OS Specific ---
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+desktop.ini
+
+# --- IDEs ---
+.vscode/
+.idea/
+*.swp
+*.swo
+
+venv/

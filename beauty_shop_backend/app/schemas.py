@@ -1,6 +1,8 @@
 from pydantic import BaseModel, EmailStr
 from typing import List, Optional, Dict, Any
 from datetime import datetime
+from pydantic import Field
+from typing import Any
 
 # Auth
 class UserCreate(BaseModel):
@@ -8,7 +10,7 @@ class UserCreate(BaseModel):
     password: str
     first_name: Optional[str] = None
     last_name: Optional[str] = None
-    phone: Optional[str] = None
+    phone_number: Optional[str] = None
     address: Optional[str] = None
 
 class UserUpdate(BaseModel):
@@ -16,7 +18,7 @@ class UserUpdate(BaseModel):
     password: Optional[str] = None
     first_name: Optional[str] = None
     last_name: Optional[str] = None
-    phone: Optional[str] = None
+    phone_number: Optional[str] = None
     address: Optional[str] = None
     is_admin: Optional[bool] = None
 
@@ -45,6 +47,7 @@ class ProductSchema(BaseModel):
     name: str
     description: Optional[str]
     price: float
+    stock_quantity: int = 0
     category_id: int
     class Config: from_attributes = True
 
@@ -52,12 +55,14 @@ class ProductCreate(BaseModel):
     name: str
     description: Optional[str] = None
     price: float
-    category_id: int
+    stock_quantity: Optional[int] = 0
+    category_id: Optional[int] = None
 
 class ProductUpdate(BaseModel):
     name: Optional[str] = None
     description: Optional[str] = None
     price: Optional[float] = None
+    stock_quantity: Optional[int] = None
     category_id: Optional[int] = None
 
 # Cart
@@ -78,8 +83,6 @@ class OrderResponse(BaseModel):
     invoice_number: Optional[str] = None
     status: str
     created_at: datetime
-    class Config: from_attributes = True
-
 class OrderItemResponse(BaseModel):
     id: int
     product_name: str
@@ -98,7 +101,37 @@ class MpesaCallbackResponse(BaseModel):
     CheckoutRequestID: str
     ResultCode: int
     ResultDesc: str
-    CallbackMetadata: Optional[Dict[str, Any]] = None
-
 class MpesaTransactionStatus(BaseModel):
     status: str
+
+# Frontend-shaped order models
+class OrderItem(BaseModel):
+    name: str
+    quantity: int
+    price: float
+    totalPrice: float | None = None
+
+class CustomerInfo(BaseModel):
+    firstName: str
+    lastName: str
+    email: EmailStr
+    address: str
+    city: str
+    zip: str
+
+class OrderCreate(BaseModel):
+    customer: CustomerInfo
+    items: List[OrderItem]
+    total: float
+    paymentMethod: str | None = None
+    mpesaPhone: str | None = None
+
+class OrderDetailResponse(BaseModel):
+    id: str
+    createdAt: datetime
+    customer: CustomerInfo
+    items: List[OrderItem]
+    total: float
+    status: str
+    class Config:
+        arbitrary_types_allowed = True

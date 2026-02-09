@@ -103,7 +103,7 @@ def create_user(
         email=user_data.email,
         first_name=user_data.first_name,
         last_name=user_data.last_name,
-        phone_number=user_data.phone,
+        phone_number=user_data.phone_number,
         address=user_data.address,
         password=hash_password(user_data.password or "defaultpass123"),
         is_admin=False
@@ -160,8 +160,6 @@ def update_user(
         if key == "password" and value:
             from app.services.auth_service import hash_password
             setattr(user, "password", hash_password(value))
-        elif key == "phone":
-            setattr(user, "phone_number", value)
         else:
             setattr(user, key, value)
     
