@@ -2,18 +2,15 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Save, User, Mail, Phone, Shield } from 'lucide-react';
 import Notification from '../../components/Notification';
+import { usersAPI } from '../../services/api';
 
 const AddUser = () => {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   const [notification, setNotification] = useState({ isVisible: false, message: '', type: 'info' });
   const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
     email: '',
-    phone: '',
     role: 'customer',
-    status: 'active',
     password: '',
     confirmPassword: ''
   });
@@ -38,7 +35,7 @@ const AddUser = () => {
     });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
     if (formData.password !== formData.confirmPassword) {
@@ -48,14 +45,22 @@ const AddUser = () => {
     
     setIsLoading(true);
     
-    // Simulate user creation
-    setTimeout(() => {
-      setIsLoading(false);
+    try {
+      await usersAPI.create({
+        email: formData.email,
+        password: formData.password,
+        is_admin: formData.role === 'admin'
+      });
       showNotification('User created successfully!', 'success');
       setTimeout(() => {
         navigate('/admin/users');
       }, 1500);
-    }, 2000);
+    } catch (error) {
+      console.error('Error creating user:', error);
+      showNotification(error.response?.data?.detail || 'Failed to create user', 'error');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -86,41 +91,7 @@ const AddUser = () => {
       <form onSubmit={handleSubmit} className="max-w-2xl">
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-6">
           
-          {/* Personal Info */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">First Name</label>
-              <div className="relative">
-                <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
-                <input
-                  type="text"
-                  name="firstName"
-                  value={formData.firstName}
-                  onChange={handleChange}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-                  placeholder="First name"
-                  required
-                />
-              </div>
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Last Name</label>
-              <div className="relative">
-                <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
-                <input
-                  type="text"
-                  name="lastName"
-                  value={formData.lastName}
-                  onChange={handleChange}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-                  placeholder="Last name"
-                  required
-                />
-              </div>
-            </div>
-          </div>
-
+          {/* Email and Role */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
@@ -139,24 +110,6 @@ const AddUser = () => {
             </div>
             
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
-              <div className="relative">
-                <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
-                <input
-                  type="tel"
-                  name="phone"
-                  value={formData.phone}
-                  onChange={handleChange}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-                  placeholder="+1 (555) 123-4567"
-                  required
-                />
-              </div>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Role</label>
               <div className="relative">
                 <Shield className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
@@ -172,20 +125,6 @@ const AddUser = () => {
                   ))}
                 </select>
               </div>
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
-              <select
-                name="status"
-                value={formData.status}
-                onChange={handleChange}
-                className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-                required
-              >
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
-              </select>
             </div>
           </div>
 

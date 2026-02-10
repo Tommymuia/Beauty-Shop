@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.routes import auth, products, orders, cart
+from app.routes import auth, products, orders, cart, users, reviews, support
 from dotenv import load_dotenv
 import os
 
@@ -9,9 +9,10 @@ load_dotenv()
 
 app = FastAPI(title="Project 8: Beauty Shop API")
 
+# CORS Configuration - Must be before routes
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["*"],  # Allow all origins for development
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -23,6 +24,9 @@ app.include_router(auth, prefix="/api/auth", tags=["Authentication"])
 app.include_router(products, prefix="/api/products", tags=["Products"])
 app.include_router(orders, prefix="/api/orders", tags=["Orders"])
 app.include_router(cart, prefix="/api/cart", tags=["Cart"])
+app.include_router(users, prefix="/api/users", tags=["Users"])
+app.include_router(reviews, prefix="/api/reviews", tags=["Reviews"])
+app.include_router(support, prefix="/api/support", tags=["Support"])
 
 @app.get("/")
 async def root():

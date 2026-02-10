@@ -1,16 +1,22 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
 import { ArrowLeft, Upload, Save, X } from 'lucide-react';
-import { products } from '../../services/fakeData';
 import Notification from '../../components/Notification';
+import { productsAPI } from '../../services/api';
+import { fetchProducts, fetchProductById } from '../products/productsSlice';
 
 const EditProduct = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const { currentProduct: product, isLoading: productLoading } = useSelector((state) => state.products);
   const [isLoading, setIsLoading] = useState(false);
   const [notification, setNotification] = useState({ isVisible: false, message: '', type: 'info' });
   
-  const product = products.find(p => p.id === parseInt(id));
+  useEffect(() => {
+    dispatch(fetchProductById(id));
+  }, [dispatch, id]);
   
   const [formData, setFormData] = useState(() => ({
     name: product?.name || '',
@@ -68,17 +74,37 @@ const EditProduct = () => {
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
     
-    setTimeout(() => {
-      setIsLoading(false);
+    try {
+      const categoryMap = { 'Skincare': 1, 'Haircare': 2, 'Makeup': 3 };
+      
+      const productData = {
+        name: formData.name,
+        description: formData.description,
+        price: parseFloat(formData.price),
+        stock_quantity: parseInt(formData.stock),
+        category_id: categoryMap[formData.category],
+        image: formData.image,
+        rating: formData.rating,
+        is_new: formData.isNew
+      };
+      
+      await productsAPI.update(id, productData);
+      dispatch(fetchProducts());
+      
       showNotification('Product updated successfully!', 'success');
       setTimeout(() => {
         navigate('/admin/products');
       }, 1500);
-    }, 2000);
+    } catch (error) {
+      console.error('Error updating product:', error);
+      showNotification(error.response?.data?.detail || 'Failed to update product', 'error');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   if (!product) {

@@ -1,11 +1,19 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useSelector, useDispatch } from 'react-redux';
 import { ArrowRight, Truck, ShieldCheck, RefreshCw, Headphones, Star } from 'lucide-react';
 import ProductCard from '../features/products/ProductCard';
-import { products, categories } from '../services/fakeData';
+import { categories } from '../services/fakeData';
+import { fetchProducts } from '../features/products/productsSlice';
 
 const Home = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const { items: products } = useSelector((state) => state.products);
+
+  useEffect(() => {
+    dispatch(fetchProducts());
+  }, [dispatch]);
 
   return (
     <div className="space-y-20 pb-20">

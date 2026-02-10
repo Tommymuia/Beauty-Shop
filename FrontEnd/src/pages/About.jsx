@@ -18,7 +18,7 @@ const About = () => {
       <section className="max-w-7xl mx-auto px-6 py-20 grid md:grid-cols-2 gap-12 items-center">
         <div className="relative aspect-[4/5] bg-gray-100 rounded-2xl overflow-hidden">
           <img 
-            src="https://images.unsplash.com/photo-1556228552-e934787dc83c?auto=format&fit=crop&q=80&w=800" 
+            src="https://i.pinimg.com/736x/fc/5e/48/fc5e4818733b2e473bf92c4dfc78bced.jpg" 
             alt="Our Founder" 
             className="w-full h-full object-cover"
           />
@@ -78,9 +78,9 @@ const About = () => {
         
         <div className="grid md:grid-cols-3 gap-8">
           {[
-            { name: "Sarah Chen", role: "Founder & CEO", image: "https://images.unsplash.com/photo-1494790108755-2616b612b786?auto=format&fit=crop&q=80&w=400" },
-            { name: "Dr. Maria Rodriguez", role: "Head of R&D", image: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=400" },
-            { name: "James Wilson", role: "Sustainability Director", image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=400" },
+            { name: "Natalie Keen", role: "Founder & CEO", image: "https://i.pinimg.com/736x/15/14/bb/1514bb7cd66f7494a8a4643696cf8ab0.jpg" },
+            { name: "Dr. Maria James", role: "Head of R&D", image: "https://i.pinimg.com/736x/85/8d/77/858d777a89e67ab024cdbd1412a603aa.jpg" },
+            { name: "James Wilson", role: "Sustainability Director", image: "https://i.pinimg.com/736x/64/18/fb/6418fbb386606f49f05a9692908ebd1a.jpg" },
           ].map((member, idx) => (
             <div key={idx} className="text-center">
               <div className="w-32 h-32 mx-auto mb-4 rounded-full overflow-hidden">

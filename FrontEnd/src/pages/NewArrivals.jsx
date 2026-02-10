@@ -1,10 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
 import { Sparkles } from 'lucide-react';
 import ProductCard from '../features/products/ProductCard';
-import { products } from '../services/fakeData';
+import { fetchProducts } from '../features/products/productsSlice';
 
 const NewArrivals = () => {
+  const dispatch = useDispatch();
+  const { items: products } = useSelector((state) => state.products);
   const [selectedCategory, setSelectedCategory] = useState('All');
+  
+  useEffect(() => {
+    dispatch(fetchProducts());
+  }, [dispatch]);
   
   // Filter products marked as new or take the latest ones
   const newProducts = products.filter(product => product.isNew);

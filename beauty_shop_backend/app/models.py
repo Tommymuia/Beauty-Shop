@@ -30,6 +30,9 @@ class Product(Base):
     price = Column(Float)
     stock_quantity = Column(Integer, default=0)
     category_id = Column(Integer, ForeignKey("categories.id"))
+    image = Column(String, nullable=True)
+    rating = Column(Float, default=4.5)
+    is_new = Column(Boolean, default=False)
     
     category = relationship("Category", back_populates="products")
 
@@ -70,3 +73,23 @@ class Order(Base):
 
     def get_items(self):
         return json.loads(self.items_json) if self.items_json else []
+
+class Review(Base):
+    __tablename__ = "reviews"
+    id = Column(Integer, primary_key=True, index=True)
+    product_id = Column(Integer, ForeignKey("products.id"))
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    user_name = Column(String, default="Anonymous")
+    rating = Column(Integer)
+    comment = Column(Text)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+class SupportMessage(Base):
+    __tablename__ = "support_messages"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=False)
+    email = Column(String, nullable=False)
+    subject = Column(String, nullable=False)
+    message = Column(Text, nullable=False)
+    status = Column(String, default="pending")  # pending, resolved, closed
+    created_at = Column(DateTime(timezone=True), server_default=func.now())

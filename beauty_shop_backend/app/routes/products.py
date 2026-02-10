@@ -18,7 +18,29 @@ def get_products(
         query = query.filter(Product.category_id == category_id)
     if search:
         query = query.filter(Product.name.ilike(f"%{search}%"))
-    return query.all()
+    
+    products = query.all()
+    category_map = {1: 'Skincare', 2: 'Haircare', 3: 'Makeup'}
+    
+    result = []
+    for p in products:
+        product_dict = {
+            'id': p.id,
+            'name': p.name,
+            'description': p.description,
+            'price': p.price,
+            'category_id': p.category_id,
+            'category': category_map.get(p.category_id, 'Unknown'),
+            'stock_quantity': p.stock_quantity,
+            'stock': p.stock_quantity,
+            'image': p.image,
+            'rating': p.rating,
+            'is_new': p.is_new,
+            'isNew': p.is_new
+        }
+        result.append(product_dict)
+    
+    return result
 
 
 @router.post("/", response_model=ProductSchema)
@@ -28,12 +50,30 @@ def create_product(payload: dict, db: Session = Depends(get_db)):
         description=payload.get('description'),
         price=payload.get('price'),
         stock_quantity=payload.get('stock_quantity', 0),
-        category_id=payload.get('category_id')
+        category_id=payload.get('category_id'),
+        image=payload.get('image'),
+        rating=payload.get('rating', 4.5),
+        is_new=payload.get('is_new', False)
     )
     db.add(new)
     db.commit()
     db.refresh(new)
-    return new
+    
+    category_map = {1: 'Skincare', 2: 'Haircare', 3: 'Makeup'}
+    return {
+        'id': new.id,
+        'name': new.name,
+        'description': new.description,
+        'price': new.price,
+        'category_id': new.category_id,
+        'category': category_map.get(new.category_id, 'Unknown'),
+        'stock_quantity': new.stock_quantity,
+        'stock': new.stock_quantity,
+        'image': new.image,
+        'rating': new.rating,
+        'is_new': new.is_new,
+        'isNew': new.is_new
+    }
 
 
 @router.get("/{product_id}", response_model=ProductSchema)
@@ -41,7 +81,22 @@ def get_product(product_id: int, db: Session = Depends(get_db)):
     prod = db.query(Product).filter(Product.id == product_id).first()
     if not prod:
         raise HTTPException(status_code=404, detail="Product not found")
-    return prod
+    
+    category_map = {1: 'Skincare', 2: 'Haircare', 3: 'Makeup'}
+    return {
+        'id': prod.id,
+        'name': prod.name,
+        'description': prod.description,
+        'price': prod.price,
+        'category_id': prod.category_id,
+        'category': category_map.get(prod.category_id, 'Unknown'),
+        'stock_quantity': prod.stock_quantity,
+        'stock': prod.stock_quantity,
+        'image': prod.image,
+        'rating': prod.rating,
+        'is_new': prod.is_new,
+        'isNew': prod.is_new
+    }
 
 
 @router.put("/{product_id}", response_model=ProductSchema)

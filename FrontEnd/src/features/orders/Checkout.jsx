@@ -2,9 +2,10 @@ import React, { useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { clearCart } from '../cart/cartSlice';
-import { createOrder } from '../../services/fakeData';
+import { createOrder } from './ordersSlice';
 import { Loader2, Phone, CreditCard } from 'lucide-react';
 import Notification from '../../components/Notification';
+import MpesaPayment from '../../components/MpesaPayment';
 
 const Checkout = () => {
   const { items, totalAmount } = useSelector((state) => state.cart);
@@ -12,17 +13,22 @@ const Checkout = () => {
   const navigate = useNavigate();
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState('card');
-  const [mpesaPhone, setMpesaPhone] = useState('');
-  const [mpesaPrompted, setMpesaPrompted] = useState(false);
+  const [showMpesaModal, setShowMpesaModal] = useState(false);
+  const [mpesaTransaction, setMpesaTransaction] = useState(null);
   const [notification, setNotification] = useState({ isVisible: false, message: '', type: 'info' });
 
   const [formData, setFormData] = useState({
     firstName: '', lastName: '', email: '', address: '', city: '', zip: '', card: ''
   });
 
-  // Redirect if cart is empty
+  // Redirect if cart is empty - MUST be at top level
+  React.useEffect(() => {
+    if (items.length === 0) {
+      navigate('/cart');
+    }
+  }, [items.length, navigate]);
+
   if (items.length === 0) {
-    React.useEffect(() => { navigate('/cart'); }, [navigate]);
     return null;
   }
 
@@ -38,51 +44,53 @@ const Checkout = () => {
     setNotification({ ...notification, isVisible: false });
   };
 
-  const handleMpesaPrompt = () => {
-    if (!mpesaPhone) {
-      showNotification('Please enter your M-Pesa phone number', 'error');
-      return;
-    }
-    if (mpesaPhone.length < 10) {
-      showNotification('Please enter a valid phone number', 'error');
-      return;
-    }
-    
-    setMpesaPrompted(true);
-    showNotification(`Payment prompt sent to ${mpesaPhone}. Please check your phone and enter your PIN.`, 'success');
+  const handleMpesaSuccess = (transaction) => {
+    setMpesaTransaction(transaction);
+    setShowMpesaModal(false);
+    showNotification('M-Pesa payment successful!', 'success');
+    // Auto-submit the order
+    setTimeout(() => {
+      handleSubmit(null, transaction);
+    }, 1000);
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async (e, mpesaData = null) => {
+    if (e) e.preventDefault();
     
-    if (paymentMethod === 'mpesa' && !mpesaPrompted) {
-      showNotification('Please complete M-Pesa payment first', 'error');
+    // If M-Pesa selected and no transaction yet, show modal
+    if (paymentMethod === 'mpesa' && !mpesaData && !mpesaTransaction) {
+      console.log('Opening M-Pesa modal...');
+      setShowMpesaModal(true);
       return;
     }
     
     setIsProcessing(true);
 
+    const transaction = mpesaData || mpesaTransaction;
     const orderPayload = {
       customer: formData,
       items: items,
       total: totalAmount,
       paymentMethod: paymentMethod,
-      ...(paymentMethod === 'mpesa' && { mpesaPhone })
+      ...(paymentMethod === 'mpesa' && transaction && { 
+        mpesaPhone: transaction.phoneNumber,
+        transactionId: transaction.transactionId 
+      })
     };
 
     try {
-      // 1. Call the Fake DB Service
-      const newOrder = await createOrder(orderPayload);
+      // Create order via API
+      const result = await dispatch(createOrder(orderPayload)).unwrap();
       
-      // 2. Clear Redux Cart
-      dispatch(clearCart());
+      // Navigate to Order Confirmation page FIRST (before clearing cart to avoid redirect)
+      navigate(`/order-confirmation/${result.id}`);
       
-      // 3. Navigate to Invoice using the NEW generated ID
-      navigate(`/invoice/${newOrder.id}`);
+      // Clear Redux Cart after navigation
+      setTimeout(() => dispatch(clearCart()), 100);
       
     } catch (error) {
       console.error("Checkout failed", error);
-      showNotification("Something went wrong. Please try again.", 'error');
+      showNotification(error || "Something went wrong. Please try again.", 'error');
     } finally {
       setIsProcessing(false);
     }
@@ -165,33 +173,26 @@ const Checkout = () => {
             {paymentMethod === 'mpesa' && (
               <div className="bg-green-50 p-4 rounded-lg border border-green-200">
                 <p className="text-sm text-green-700 mb-3 font-medium">Pay with M-Pesa</p>
-                <div className="space-y-3">
-                  <div className="relative">
-                    <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
-                    <input
-                      type="tel"
-                      value={mpesaPhone}
-                      onChange={(e) => setMpesaPhone(e.target.value)}
-                      placeholder="Enter M-Pesa phone number (254...)"
-                      className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                      required
-                    />
+                {mpesaTransaction ? (
+                  <div className="text-center py-3">
+                    <span className="text-green-700 font-medium">✓ Payment Confirmed</span>
+                    <p className="text-xs text-gray-600 mt-1">Transaction: {mpesaTransaction.transactionId}</p>
                   </div>
-                  
-                  {!mpesaPrompted ? (
+                ) : (
+                  <>
+                    <p className="text-sm text-gray-600 mb-3">Click "Pay with M-Pesa" below to complete payment</p>
                     <button
                       type="button"
-                      onClick={handleMpesaPrompt}
-                      className="w-full bg-green-600 text-white py-2 rounded-lg font-medium hover:bg-green-700 transition-colors"
+                      onClick={() => {
+                        console.log('Test button clicked');
+                        setShowMpesaModal(true);
+                      }}
+                      className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm"
                     >
-                      Prompt Me
+                      Open M-Pesa Payment
                     </button>
-                  ) : (
-                    <div className="text-center py-2">
-                      <span className="text-green-700 font-medium">✓ M-Pesa prompt sent</span>
-                    </div>
-                  )}
-                </div>
+                  </>
+                )}
               </div>
             )}
           </div>
@@ -203,8 +204,10 @@ const Checkout = () => {
           >
             {isProcessing ? (
               <><Loader2 className="animate-spin mr-2" /> Processing...</>
+            ) : paymentMethod === 'mpesa' && !mpesaTransaction ? (
+              'Pay with M-Pesa'
             ) : (
-              `Pay Kshs. ${totalAmount.toLocaleString()}`
+              `Complete Order - Kshs. ${totalAmount.toLocaleString()}`
             )}
           </button>
         </form>
@@ -226,6 +229,19 @@ const Checkout = () => {
           </div>
         </div>
       </div>
+
+      {/* M-Pesa Payment Modal */}
+      {showMpesaModal && (
+        <div className="fixed inset-0 bg-gradient-to-br from-pink-50 to-white flex items-center justify-center z-50 p-4">
+          <div className="max-w-md w-full">
+            <MpesaPayment
+              amount={totalAmount}
+              onSuccess={handleMpesaSuccess}
+              onCancel={() => setShowMpesaModal(false)}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };

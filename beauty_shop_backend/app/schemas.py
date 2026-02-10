@@ -25,6 +25,13 @@ class ProductSchema(BaseModel):
     description: Optional[str]
     price: float
     category_id: int
+    category: Optional[str] = None
+    stock_quantity: int
+    stock: Optional[int] = None
+    image: Optional[str] = None
+    rating: float = 4.5
+    is_new: bool = False
+    isNew: Optional[bool] = None
     class Config: from_attributes = True
 
 # Cart
@@ -53,7 +60,7 @@ class OrderItem(BaseModel):
     name: str
     quantity: int
     price: float
-    totalPrice: float | None = None
+    totalPrice: Optional[float] = None
 
 class CustomerInfo(BaseModel):
     firstName: str
@@ -67,8 +74,9 @@ class OrderCreate(BaseModel):
     customer: CustomerInfo
     items: List[OrderItem]
     total: float
-    paymentMethod: str | None = None
-    mpesaPhone: str | None = None
+    paymentMethod: Optional[str] = None
+    mpesaPhone: Optional[str] = None
+    transactionId: Optional[str] = None
 
 class OrderDetailResponse(BaseModel):
     id: str

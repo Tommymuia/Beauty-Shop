@@ -9,7 +9,7 @@ export const products = [
     price: 6240.00,
     rating: 4.8,
     reviews: 120,
-    image: "https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&q=80&w=600",
+    image: "https://via.placeholder.com/600x400/FFB6C1/FFFFFF?text=Vitamin+C+Serum",
     description: "A powerful serum that brightens skin tone and reduces signs of aging.",
     stock: 50,
     isNew: true,
@@ -26,7 +26,7 @@ export const products = [
     price: 7280.00,
     rating: 4.5,
     reviews: 85,
-    image: "https://images.unsplash.com/photo-1611930022073-b7a4ba5fcccd?auto=format&fit=crop&q=80&w=600",
+    image: "https://via.placeholder.com/600x400/FFB6C1/FFFFFF?text=Moisturizer",
     description: "Deep hydration for dry and sensitive skin.",
     stock: 30,
     isNew: false,
@@ -41,7 +41,7 @@ export const products = [
     price: 4160.00,
     rating: 4.9,
     reviews: 210,
-    image: "https://images.unsplash.com/photo-1586495777744-4413f21062fa?auto=format&fit=crop&q=80&w=600",
+    image: "https://via.placeholder.com/600x400/FFB6C1/FFFFFF?text=Lipstick",
     description: "Long-lasting matte finish that doesn't dry out lips.",
     stock: 100,
     isNew: true,
@@ -54,7 +54,7 @@ export const products = [
     price: 4680.00,
     rating: 4.2,
     reviews: 45,
-    image: "https://images.unsplash.com/photo-1608248597279-f99d160bfbc8?auto=format&fit=crop&q=80&w=600",
+    image: "https://via.placeholder.com/600x400/FFB6C1/FFFFFF?text=Hair+Oil",
     description: "Restores shine and softness to damaged hair.",
     stock: 25,
     isNew: false,
@@ -67,7 +67,7 @@ export const products = [
     price: 3770.00,
     rating: 4.7,
     reviews: 95,
-    image: "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&q=80&w=600",
+    image: "https://via.placeholder.com/600x400/FFB6C1/FFFFFF?text=Sunscreen",
     description: "Broad-spectrum sunscreen that protects against UVA and UVB rays.",
     stock: 60,
     isNew: true,
@@ -82,7 +82,7 @@ export const products = [
     price: 3120.00,
     rating: 4.3, 
     reviews: 65,
-    image: "https://images.unsplash.com/photo-1586495777744-4413f21062fa?auto=format&fit=crop&q=80&w=600",
+    image: "https://via.placeholder.com/600x400/FFB6C1/FFFFFF?text=Shampoo",
     description: "Enhances volume and adds body to fine hair.",
     stock: 40,
     isNew: false,
@@ -97,19 +97,19 @@ export const categories = [
     id: 1,
     title: "Skincare",
     subtitle: "Nourish & Glow",
-    image: "https://images.unsplash.com/photo-1596462502278-27bfdd403cc2?auto=format&fit=crop&q=80&w=600"
+    image: "https://images.unsplash.com/photo-1620916566398-39f1143ab7be?q=80&w=800&auto=format&fit=crop"
   },
   {
     id: 2,
     title: "Haircare",
     subtitle: "Strength & Shine",
-    image: "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&q=80&w=600"
+    image: "https://images.unsplash.com/photo-1734892497171-2685f9994742?q=80&w=800&auto=format&fit=crop"
   },
   {
     id: 3,
     title: "Makeup",
     subtitle: "Define & Enhance",
-    image: "https://images.unsplash.com/photo-1516975080664-ed2fc6a32937?auto=format&fit=crop&q=80&w=600"
+    image: "https://images.unsplash.com/photo-1542452255191-c85a98f2c5d1?q=80&w=800&auto=format&fit=crop"
   }
 ];
 

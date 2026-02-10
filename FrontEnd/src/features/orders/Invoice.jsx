@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getOrderById } from '../../services/fakeData'; // Import service
+import { ordersAPI } from '../../services/api';
 import { CheckCircle, Printer, Loader2 } from 'lucide-react';
 
 const Invoice = () => {
@@ -10,18 +10,47 @@ const Invoice = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Simulate fetching from DB
-    const foundOrder = getOrderById(orderId);
+    const fetchOrder = async () => {
+      try {
+        const response = await ordersAPI.getById(orderId);
+        const orderData = response.data;
+        
+        // Handle both formats: direct objects or JSON strings
+        if (orderData.customer) {
+          // Already an object from OrderDetailResponse
+          orderData.customer = orderData.customer;
+        } else if (typeof orderData.customer_json === 'string') {
+          orderData.customer = JSON.parse(orderData.customer_json);
+        } else if (orderData.customer_json) {
+          orderData.customer = orderData.customer_json;
+        }
+        
+        if (orderData.items) {
+          // Already an array from OrderDetailResponse
+          orderData.items = orderData.items;
+        } else if (typeof orderData.items_json === 'string') {
+          orderData.items = JSON.parse(orderData.items_json);
+        } else if (orderData.items_json) {
+          orderData.items = orderData.items_json;
+        }
+        
+        orderData.total = orderData.total || orderData.total_amount;
+        orderData.createdAt = orderData.createdAt || orderData.created_at;
+        
+        setOrder(orderData);
+      } catch (error) {
+        console.error('Error fetching order:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
     
-    if (foundOrder) {
-      setOrder(foundOrder);
-    }
-    setLoading(false);
+    fetchOrder();
   }, [orderId]);
 
   if (loading) return <div className="flex h-screen items-center justify-center"><Loader2 className="animate-spin" /></div>;
 
-  if (!order) {
+  if (!order || !order.customer) {
     return (
       <div className="p-20 text-center">
         <h2 className="text-xl font-bold text-gray-800">Order Not Found</h2>
@@ -35,8 +64,9 @@ const Invoice = () => {
     <div className="max-w-2xl mx-auto px-6 py-12">
       <div className="text-center mb-10">
         <div className="flex justify-center mb-4 text-green-500"><CheckCircle size={64} /></div>
-        <h1 className="text-3xl font-serif text-gray-900">Thank you for your order!</h1>
-        <p className="text-gray-500 mt-2">A confirmation email has been sent to {order.customer.email}</p>
+        <h1 className="text-3xl font-serif text-gray-900 mb-2">Thank You for Shopping with Us!</h1>
+        <p className="text-lg text-gray-700 mb-2">Your order has been successfully placed</p>
+        <p className="text-gray-500">A confirmation email has been sent to {order.customer?.email || 'your email'}</p>
       </div>
 
       <div className="bg-white border border-gray-200 p-8 rounded-xl shadow-sm print:shadow-none print:border-none">
@@ -60,7 +90,7 @@ const Invoice = () => {
           </div>
           <div className="text-right">
              <h3 className="text-xs font-bold uppercase text-gray-400 mb-2">Status:</h3>
-             <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-xs font-bold">Paid</span>
+             <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-xs font-bold">{order.status || 'Paid'}</span>
           </div>
         </div>
 
@@ -77,7 +107,7 @@ const Invoice = () => {
               <tr key={idx} className="border-b border-gray-50">
                 <td className="py-3">{item.name}</td>
                 <td className="py-3 text-center">{item.quantity}</td>
-                <td className="py-3 text-right">Kshs. {item.totalPrice.toLocaleString()}</td>
+                <td className="py-3 text-right">Kshs. {(item.totalPrice || item.price * item.quantity).toLocaleString()}</td>
               </tr>
             ))}
           </tbody>

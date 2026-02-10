@@ -9,14 +9,24 @@ def create_order_record(db, payload):
     """
     public_id = f"ORD-{int(time.time() * 1000)}"
 
+    # Set status based on payment method
+    status = 'Paid' if payload.paymentMethod == 'mpesa' else 'Processing'
+
     new_order = Order(
         public_id=public_id,
         total_amount=payload.total,
-        status='Processing',
+        status=status,
         invoice_number=f"INV-{public_id[-8:]}"
     )
-    # store json
-    new_order.set_customer(payload.customer.dict())
+    # store customer json with payment info
+    customer_data = payload.customer.dict()
+    customer_data['paymentMethod'] = payload.paymentMethod
+    if payload.paymentMethod == 'mpesa' and hasattr(payload, 'mpesaPhone'):
+        customer_data['mpesaPhone'] = payload.mpesaPhone
+    if hasattr(payload, 'transactionId'):
+        customer_data['transactionId'] = payload.transactionId
+    
+    new_order.set_customer(customer_data)
 
     # ensure items include totalPrice
     items = []

@@ -23,7 +23,8 @@ router = APIRouter()
 def create_order(
     payload: OrderCreate,
     background_tasks: BackgroundTasks,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
     """
     Public endpoint used by frontend to create an order.
@@ -31,12 +32,18 @@ def create_order(
     """
     # create order record and return structured response
     order_obj = create_order_record(db, payload)
+    
+    # Associate order with authenticated user
+    order_obj.user_id = current_user.id
+    db.commit()
+    db.refresh(order_obj)
 
     # Generate PDF and send email in background
     try:
         pdf_path = generate_invoice_pdf(order_obj.invoice_number or order_obj.public_id, order_obj.total_amount, (order_obj.get_customer() or {}).get('email'), order_obj.get_items())
         background_tasks.add_task(send_invoice_email, recipient_email=(order_obj.get_customer() or {}).get('email'), invoice_no=order_obj.invoice_number or order_obj.public_id, pdf_path=pdf_path)
-    except Exception:
+    except Exception as e:
+        print(f"Invoice generation/email error: {e}")
         pass
 
     resp = {
@@ -49,6 +56,34 @@ def create_order(
     }
     return resp
 
+
+@router.get("/all", response_model=list)
+def get_all_orders(db: Session = Depends(get_db)):
+    """Admin endpoint to fetch all orders."""
+    orders = db.query(Order).order_by(Order.created_at.desc()).all()
+    return [{
+        "id": order.public_id or order.id,
+        "invoice_number": order.invoice_number or f"ORD-{order.id}",
+        "total_amount": order.total_amount,
+        "status": order.status,
+        "created_at": order.created_at,
+        "customer_json": order.customer_json,
+        "items_json": order.items_json
+    } for order in orders]
+
+@router.get("/", response_model=list)
+def get_user_orders(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """Get orders for the authenticated user."""
+    orders = db.query(Order).filter(Order.user_id == current_user.id).order_by(Order.created_at.desc()).all()
+    return [{
+        "id": order.public_id or order.id,
+        "invoice_number": order.invoice_number or f"ORD-{order.id}",
+        "total_amount": order.total_amount,
+        "status": order.status,
+        "created_at": order.created_at,
+        "customer_json": order.customer_json,
+        "items_json": order.items_json
+    } for order in orders]
 
 @router.get("/{order_id}", response_model=OrderDetailResponse)
 def get_order(order_id: str, db: Session = Depends(get_db)):
@@ -65,6 +100,17 @@ def get_order(order_id: str, db: Session = Depends(get_db)):
         "total": order_obj.total_amount,
         "status": order_obj.status
     }
+
+@router.put("/{order_id}/status")
+def update_order_status(order_id: int, payload: dict, db: Session = Depends(get_db)):
+    """Update order status."""
+    order = db.query(Order).filter(Order.id == order_id).first()
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+    
+    order.status = payload.get('status', order.status)
+    db.commit()
+    return {"message": "Order status updated", "status": order.status}
 
 @router.post("/checkout")
 def checkout(

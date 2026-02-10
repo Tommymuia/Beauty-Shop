@@ -1,16 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
-import { products } from '../services/fakeData';
+import { useSelector, useDispatch } from 'react-redux';
+import { fetchProducts } from '../features/products/productsSlice';
 import ProductCard from '../features/products/ProductCard';
 import { Search, Filter, X } from 'lucide-react';
 
 const CategoryPage = () => {
   const { category } = useParams();
+  const dispatch = useDispatch();
+  const { items: products } = useSelector((state) => state.products);
   const [searchParams, setSearchParams] = useSearchParams();
   const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '');
   const [sortBy, setSortBy] = useState('name');
-  const [priceRange, setPriceRange] = useState([0, 200]);
+  const [priceRange, setPriceRange] = useState([0, 10000]);
   const [showFilters, setShowFilters] = useState(false);
+
+  useEffect(() => {
+    dispatch(fetchProducts());
+  }, [dispatch]);
 
   useEffect(() => {
     const search = searchParams.get('search');
@@ -25,14 +32,16 @@ const CategoryPage = () => {
   // Filter and search products
   let displayProducts = category === 'shop' 
     ? products 
-    : products.filter(p => p.category.toLowerCase() === category.toLowerCase());
+    : products.filter(p => p.category?.toLowerCase() === category?.toLowerCase());
+
+  console.log('📊 Category:', category, '| Total products:', products.length, '| Filtered:', displayProducts.length);
 
   // Apply search filter
   if (searchTerm) {
     displayProducts = displayProducts.filter(product => 
-      product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      product.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      product.category.toLowerCase().includes(searchTerm.toLowerCase())
+      product.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      product.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      product.category?.toLowerCase().includes(searchTerm.toLowerCase())
     );
   }
 
@@ -149,7 +158,7 @@ const CategoryPage = () => {
                   <input
                     type="number"
                     value={priceRange[1]}
-                    onChange={(e) => setPriceRange([priceRange[0], parseInt(e.target.value) || 200])}
+                    onChange={(e) => setPriceRange([priceRange[0], parseInt(e.target.value) || 10000])}
                     className="w-20 px-3 py-2 border border-gray-200 rounded-lg"
                     placeholder="Max"
                   />

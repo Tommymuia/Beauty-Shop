@@ -7,6 +7,8 @@ import ProductDetails from '../features/products/ProductDetails';
 import Cart from '../features/cart/Cart';
 import Checkout from '../features/orders/Checkout';
 import Invoice from '../features/orders/Invoice';
+import OrderConfirmation from '../features/orders/OrderConfirmation';
+import OrderHistory from '../features/orders/OrderHistory';
 import CategoryPage from '../pages/CategoryPage';
 import Login from '../features/auth/Login';
 import Register from '../features/auth/Register';
@@ -20,8 +22,7 @@ import AdminDashboard from '../features/admin/Dashboard';
 import ManageProducts from '../features/admin/ManageProducts';
 import ManageOrders from '../features/admin/ManageOrders';
 import ManageUsers from '../features/admin/ManageUsers';
-import Analytics from '../features/admin/Analytics';
-import Reports from '../features/admin/Reports';
+import AnalyticsReports from '../features/admin/AnalyticsReports';
 import Roles from '../features/admin/Roles';
 import AddProduct from '../features/admin/AddProduct';
 import EditProduct from '../features/admin/EditProduct';
@@ -29,6 +30,8 @@ import OrderDetails from '../features/admin/OrderDetails';
 import AdminProfile from '../features/admin/AdminProfile';
 import CustomerSupport from '../features/admin/CustomerSupport';
 import AddUser from '../features/admin/AddUser';
+import AdminProductView from '../features/admin/AdminProductView';
+import AdminInvoice from '../features/admin/AdminInvoice';
 
 const AppRoutes = () => {
   return (
@@ -52,14 +55,16 @@ const AppRoutes = () => {
       <Route path="/admin/profile" element={<AdminLayout><AdminProfile /></AdminLayout>} />
       <Route path="/admin/products" element={<AdminLayout><ManageProducts /></AdminLayout>} />
       <Route path="/admin/products/new" element={<AdminLayout><AddProduct /></AdminLayout>} />
+      <Route path="/admin/products/view/:id" element={<AdminLayout><AdminProductView /></AdminLayout>} />
       <Route path="/admin/products/edit/:id" element={<AdminLayout><EditProduct /></AdminLayout>} />
       <Route path="/admin/orders" element={<AdminLayout><ManageOrders /></AdminLayout>} />
       <Route path="/admin/orders/:id" element={<AdminLayout><OrderDetails /></AdminLayout>} />
+      <Route path="/admin/orders/:orderId/invoice" element={<AdminLayout><AdminInvoice /></AdminLayout>} />
       <Route path="/admin/users" element={<AdminLayout><ManageUsers /></AdminLayout>} />
       <Route path="/admin/users/new" element={<AdminLayout><AddUser /></AdminLayout>} />
       <Route path="/admin/support" element={<AdminLayout><CustomerSupport /></AdminLayout>} />
-      <Route path="/admin/analytics" element={<AdminLayout><Analytics /></AdminLayout>} />
-      <Route path="/admin/reports" element={<AdminLayout><Reports /></AdminLayout>} />
+      <Route path="/admin/analytics" element={<AdminLayout><AnalyticsReports /></AdminLayout>} />
+      <Route path="/admin/reports" element={<AdminLayout><AnalyticsReports /></AdminLayout>} />
       <Route path="/admin/roles" element={<AdminLayout><Roles /></AdminLayout>} />
       
       {/* Dynamic Category Route */}
@@ -68,7 +73,9 @@ const AppRoutes = () => {
       <Route path="/product/:id" element={<MainLayout><ProductDetails /></MainLayout>} />
       <Route path="/cart" element={<MainLayout><Cart /></MainLayout>} />
       <Route path="/checkout" element={<MainLayout><Checkout /></MainLayout>} />
+      <Route path="/order-confirmation/:orderId" element={<MainLayout><OrderConfirmation /></MainLayout>} />
       <Route path="/invoice/:orderId" element={<MainLayout><Invoice /></MainLayout>} />
+      <Route path="/orders" element={<MainLayout><OrderHistory /></MainLayout>} />
     </Routes>
   );
 };
