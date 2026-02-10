@@ -54,4 +54,9 @@ export const usersAPI = {
   delete: (userId) => api.delete(`/users/${userId}`),
 };
 
+export const reviewsAPI = {
+  getByProduct: (productId) => api.get(`/reviews/product/${productId}`),
+  create: (reviewData) => api.post('/reviews/', reviewData),
+};
+
 export default api;

@@ -20,8 +20,7 @@ import AdminDashboard from '../features/admin/Dashboard';
 import ManageProducts from '../features/admin/ManageProducts';
 import ManageOrders from '../features/admin/ManageOrders';
 import ManageUsers from '../features/admin/ManageUsers';
-import Analytics from '../features/admin/Analytics';
-import Reports from '../features/admin/Reports';
+import AnalyticsReports from '../features/admin/AnalyticsReports';
 import Roles from '../features/admin/Roles';
 import AddProduct from '../features/admin/AddProduct';
 import EditProduct from '../features/admin/EditProduct';
@@ -29,6 +28,7 @@ import OrderDetails from '../features/admin/OrderDetails';
 import AdminProfile from '../features/admin/AdminProfile';
 import CustomerSupport from '../features/admin/CustomerSupport';
 import AddUser from '../features/admin/AddUser';
+import AdminProductView from '../features/admin/AdminProductView';
 
 const AppRoutes = () => {
   return (
@@ -52,14 +52,15 @@ const AppRoutes = () => {
       <Route path="/admin/profile" element={<AdminLayout><AdminProfile /></AdminLayout>} />
       <Route path="/admin/products" element={<AdminLayout><ManageProducts /></AdminLayout>} />
       <Route path="/admin/products/new" element={<AdminLayout><AddProduct /></AdminLayout>} />
+      <Route path="/admin/products/view/:id" element={<AdminLayout><AdminProductView /></AdminLayout>} />
       <Route path="/admin/products/edit/:id" element={<AdminLayout><EditProduct /></AdminLayout>} />
       <Route path="/admin/orders" element={<AdminLayout><ManageOrders /></AdminLayout>} />
       <Route path="/admin/orders/:id" element={<AdminLayout><OrderDetails /></AdminLayout>} />
       <Route path="/admin/users" element={<AdminLayout><ManageUsers /></AdminLayout>} />
       <Route path="/admin/users/new" element={<AdminLayout><AddUser /></AdminLayout>} />
       <Route path="/admin/support" element={<AdminLayout><CustomerSupport /></AdminLayout>} />
-      <Route path="/admin/analytics" element={<AdminLayout><Analytics /></AdminLayout>} />
-      <Route path="/admin/reports" element={<AdminLayout><Reports /></AdminLayout>} />
+      <Route path="/admin/analytics" element={<AdminLayout><AnalyticsReports /></AdminLayout>} />
+      <Route path="/admin/reports" element={<AdminLayout><AnalyticsReports /></AdminLayout>} />
       <Route path="/admin/roles" element={<AdminLayout><Roles /></AdminLayout>} />
       
       {/* Dynamic Category Route */}

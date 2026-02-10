@@ -21,9 +21,14 @@ const Checkout = () => {
     firstName: '', lastName: '', email: '', address: '', city: '', zip: '', card: ''
   });
 
-  // Redirect if cart is empty
+  // Redirect if cart is empty - MUST be at top level
+  React.useEffect(() => {
+    if (items.length === 0) {
+      navigate('/cart');
+    }
+  }, [items.length, navigate]);
+
   if (items.length === 0) {
-    React.useEffect(() => { navigate('/cart'); }, [navigate]);
     return null;
   }
 
@@ -52,7 +57,9 @@ const Checkout = () => {
   const handleSubmit = async (e, mpesaData = null) => {
     if (e) e.preventDefault();
     
+    // If M-Pesa selected and no transaction yet, show modal
     if (paymentMethod === 'mpesa' && !mpesaData && !mpesaTransaction) {
+      console.log('Opening M-Pesa modal...');
       setShowMpesaModal(true);
       return;
     }
@@ -172,7 +179,19 @@ const Checkout = () => {
                     <p className="text-xs text-gray-600 mt-1">Transaction: {mpesaTransaction.transactionId}</p>
                   </div>
                 ) : (
-                  <p className="text-sm text-gray-600">Click "Pay with M-Pesa" below to complete payment</p>
+                  <>
+                    <p className="text-sm text-gray-600 mb-3">Click "Pay with M-Pesa" below to complete payment</p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        console.log('Test button clicked');
+                        setShowMpesaModal(true);
+                      }}
+                      className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm"
+                    >
+                      Open M-Pesa Payment
+                    </button>
+                  </>
                 )}
               </div>
             )}

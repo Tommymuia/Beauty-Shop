@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { Eye, EyeOff, Mail, Lock, User, Phone, ArrowLeft } from 'lucide-react';
 import Notification from '../../components/Notification';
-import { loginSuccess } from './authSlice';
+import { registerUser } from './authSlice';
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -12,9 +12,7 @@ const Register = () => {
     email: '',
     phone: '',
     password: '',
-    confirmPassword: '',
-    userType: 'customer',
-    adminRole: 'order_manager' // Only used when userType is 'admin'
+    confirmPassword: ''
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -48,28 +46,16 @@ const Register = () => {
     
     setIsLoading(true);
     
-    // Simulate API call and auto-login
-    setTimeout(() => {
-      const newUser = {
-        id: Date.now(),
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        email: formData.email,
-        phone: formData.phone,
-        address: '',
-        role: formData.userType === 'admin' ? formData.adminRole : 'customer'
-      };
-      
-      // Auto-login the user
-      dispatch(loginSuccess(newUser));
+    try {
+      // Backend only needs email and password
+      await dispatch(registerUser({ email: formData.email, password: formData.password })).unwrap();
+      showNotification('Account created! Please login.', 'success');
+      setTimeout(() => navigate('/login'), 1500);
+    } catch (error) {
+      showNotification(error || 'Registration failed', 'error');
+    } finally {
       setIsLoading(false);
-      
-      if (formData.userType === 'admin') {
-        navigate('/admin');
-      } else {
-        navigate('/');
-      }
-    }, 1500);
+    }
   };
 
   return (
@@ -103,51 +89,6 @@ const Register = () => {
         {/* Form */}
         <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
           <form onSubmit={handleSubmit} className="space-y-5">
-            
-            {/* User Type Selection */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-3">Sign up as</label>
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  type="button"
-                  onClick={() => setFormData({...formData, userType: 'customer'})}
-                  className={`p-3 border-2 rounded-xl text-sm font-medium transition-all ${
-                    formData.userType === 'customer'
-                      ? 'border-pink-500 bg-pink-50 text-pink-700'
-                      : 'border-gray-200 text-gray-600 hover:border-gray-300'
-                  }`}
-                >
-                  Customer
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setFormData({...formData, userType: 'admin'})}
-                  className={`p-3 border-2 rounded-xl text-sm font-medium transition-all ${
-                    formData.userType === 'admin'
-                      ? 'border-pink-500 bg-pink-50 text-pink-700'
-                      : 'border-gray-200 text-gray-600 hover:border-gray-300'
-                  }`}
-                >
-                  Admin
-                </button>
-              </div>
-            </div>
-
-            {/* Admin Role Selection (only show if admin is selected) */}
-            {formData.userType === 'admin' && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Admin Role</label>
-                <select
-                  value={formData.adminRole}
-                  onChange={(e) => setFormData({...formData, adminRole: e.target.value})}
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all text-sm"
-                >
-                  <option value="order_manager">Order Manager</option>
-                  <option value="product_manager">Product Manager</option>
-                  <option value="admin">Full Admin</option>
-                </select>
-              </div>
-            )}
             
             {/* Name Fields */}
             <div className="grid grid-cols-2 gap-4">

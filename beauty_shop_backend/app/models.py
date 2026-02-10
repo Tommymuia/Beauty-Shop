@@ -73,3 +73,13 @@ class Order(Base):
 
     def get_items(self):
         return json.loads(self.items_json) if self.items_json else []
+
+class Review(Base):
+    __tablename__ = "reviews"
+    id = Column(Integer, primary_key=True, index=True)
+    product_id = Column(Integer, ForeignKey("products.id"))
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    user_name = Column(String, default="Anonymous")
+    rating = Column(Integer)
+    comment = Column(Text)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())

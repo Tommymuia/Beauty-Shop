@@ -230,7 +230,7 @@ const ManageUsers = () => {
                   {/* Activity */}
                   <td className="py-4 px-6">
                     <div className="text-sm">
-                      <p className="text-gray-900">Joined: {user.created_at?.split('T')[0] || 'N/A'}</p>
+                      <p className="text-gray-900">-</p>
                     </div>
                   </td>
 

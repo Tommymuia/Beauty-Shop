@@ -196,7 +196,7 @@ const ManageProducts = () => {
                   Edit
                 </Link>
                 <Link
-                  to={`/product/${product.id}`}
+                  to={`/admin/products/view/${product.id}`}
                   className="flex items-center justify-center px-3 py-2 border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
                 >
                   <Eye size={14} />

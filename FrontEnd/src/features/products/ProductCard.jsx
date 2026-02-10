@@ -13,6 +13,11 @@ const ProductCard = ({ product }) => {
   
   const isInWishlist = wishlistItems.some(item => item.id === product.id);
 
+  const fixImageUrl = (url) => {
+    if (!url) return 'https://placehold.co/600x400/FFB6C1/FFFFFF/png?text=Product';
+    return url.replace('via.placeholder.com', 'placehold.co').replace(/^(\/\/)/, 'https://');
+  };
+
   const handleCardClick = () => {
     navigate(`/product/${product.id}`);
   };
@@ -39,9 +44,12 @@ const ProductCard = ({ product }) => {
     <div onClick={handleCardClick} className="group bg-white rounded-xl overflow-hidden hover:shadow-xl transition-all duration-300 border border-gray-50 cursor-pointer">
       <div className="relative aspect-[4/5] bg-gray-100 overflow-hidden">
         <img 
-          src={product.image} 
+          src={fixImageUrl(product.image)} 
           alt={product.name} 
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+          onError={(e) => {
+            e.target.src = 'https://placehold.co/600x400/FFB6C1/FFFFFF/png?text=' + encodeURIComponent(product.name);
+          }}
         />
         
         {/* Wishlist Button */}

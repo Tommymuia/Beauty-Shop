@@ -50,12 +50,30 @@ def create_product(payload: dict, db: Session = Depends(get_db)):
         description=payload.get('description'),
         price=payload.get('price'),
         stock_quantity=payload.get('stock_quantity', 0),
-        category_id=payload.get('category_id')
+        category_id=payload.get('category_id'),
+        image=payload.get('image'),
+        rating=payload.get('rating', 4.5),
+        is_new=payload.get('is_new', False)
     )
     db.add(new)
     db.commit()
     db.refresh(new)
-    return new
+    
+    category_map = {1: 'Skincare', 2: 'Haircare', 3: 'Makeup'}
+    return {
+        'id': new.id,
+        'name': new.name,
+        'description': new.description,
+        'price': new.price,
+        'category_id': new.category_id,
+        'category': category_map.get(new.category_id, 'Unknown'),
+        'stock_quantity': new.stock_quantity,
+        'stock': new.stock_quantity,
+        'image': new.image,
+        'rating': new.rating,
+        'is_new': new.is_new,
+        'isNew': new.is_new
+    }
 
 
 @router.get("/{product_id}", response_model=ProductSchema)

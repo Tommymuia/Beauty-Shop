@@ -44,7 +44,7 @@ const Invoice = () => {
 
   if (loading) return <div className="flex h-screen items-center justify-center"><Loader2 className="animate-spin" /></div>;
 
-  if (!order) {
+  if (!order || !order.customer) {
     return (
       <div className="p-20 text-center">
         <h2 className="text-xl font-bold text-gray-800">Order Not Found</h2>
@@ -59,7 +59,7 @@ const Invoice = () => {
       <div className="text-center mb-10">
         <div className="flex justify-center mb-4 text-green-500"><CheckCircle size={64} /></div>
         <h1 className="text-3xl font-serif text-gray-900">Thank you for your order!</h1>
-        <p className="text-gray-500 mt-2">A confirmation email has been sent to {order.customer.email}</p>
+        <p className="text-gray-500 mt-2">A confirmation email has been sent to {order.customer?.email || 'your email'}</p>
       </div>
 
       <div className="bg-white border border-gray-200 p-8 rounded-xl shadow-sm print:shadow-none print:border-none">

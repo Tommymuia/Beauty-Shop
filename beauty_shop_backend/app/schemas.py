@@ -76,6 +76,7 @@ class OrderCreate(BaseModel):
     total: float
     paymentMethod: Optional[str] = None
     mpesaPhone: Optional[str] = None
+    transactionId: Optional[str] = None
 
 class OrderDetailResponse(BaseModel):
     id: str

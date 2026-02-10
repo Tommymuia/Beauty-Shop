@@ -1,29 +1,41 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { products } from '../../services/fakeData'; 
+import { fetchProductById } from './productsSlice';
 import { addItemToCart } from '../cart/cartSlice';
 import { Star, Truck, ShieldCheck, Minus, Plus, ShoppingBag, Heart, User } from 'lucide-react';
+import axios from 'axios';
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
 
 const ProductDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const { isAuthenticated } = useSelector((state) => state.auth);
+  const { isAuthenticated, user } = useSelector((state) => state.auth);
+  const { currentProduct: product, isLoading } = useSelector((state) => state.products);
   
-  // Find product
-  const product = products.find(p => p.id === parseInt(id));
-
-  // State Management
   const [qty, setQty] = useState(1);
-  const [isLiked, setIsLiked] = useState(false); // Like state
-  
-  // Reviews State
-  // We initialize with the fake reviews from data, or empty array if none exist
-  const [reviews, setReviews] = useState(product?.reviewsList || []);
+  const [isLiked, setIsLiked] = useState(false);
+  const [reviews, setReviews] = useState([]);
   const [newReview, setNewReview] = useState({ rating: 5, comment: "", name: "" });
   const [showReviewForm, setShowReviewForm] = useState(false);
 
+  useEffect(() => {
+    dispatch(fetchProductById(id));
+    fetchReviews();
+  }, [dispatch, id]);
+
+  const fetchReviews = async () => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/reviews/product/${id}`);
+      setReviews(response.data);
+    } catch (error) {
+      console.error('Error fetching reviews:', error);
+    }
+  };
+
+  if (isLoading) return <div className="p-20 text-center">Loading...</div>;
   if (!product) return <div className="p-20 text-center text-red-500">Product not found</div>;
 
   const handleWriteReview = () => {
@@ -44,21 +56,24 @@ const ProductDetails = () => {
     setIsLiked(!isLiked);
   };
 
-  const handleSubmitReview = (e) => {
+  const handleSubmitReview = async (e) => {
     e.preventDefault();
     if (!newReview.comment) return;
 
-    const reviewToAdd = {
-      id: Date.now(), // Generate fake ID
-      user: newReview.name || "Anonymous Customer",
-      rating: newReview.rating,
-      comment: newReview.comment,
-      date: new Date().toLocaleDateString()
-    };
-
-    setReviews([reviewToAdd, ...reviews]); // Add to top of list
-    setNewReview({ rating: 5, comment: "", name: "" }); // Reset form
-    setShowReviewForm(false); // Close form
+    try {
+      await axios.post(`${API_BASE_URL}/reviews/`, {
+        product_id: parseInt(id),
+        user_name: newReview.name || user?.email || "Anonymous",
+        rating: newReview.rating,
+        comment: newReview.comment
+      });
+      
+      setNewReview({ rating: 5, comment: "", name: "" });
+      setShowReviewForm(false);
+      fetchReviews(); // Refresh reviews
+    } catch (error) {
+      console.error('Error submitting review:', error);
+    }
   };
 
   return (
@@ -221,8 +236,8 @@ const ProductDetails = () => {
                         <User size={20} />
                       </div>
                       <div>
-                        <h4 className="font-bold text-gray-900">{review.user}</h4>
-                        <span className="text-xs text-gray-400">{review.date}</span>
+                        <h4 className="font-bold text-gray-900">{review.user_name}</h4>
+                        <span className="text-xs text-gray-400">{new Date(review.created_at).toLocaleDateString()}</span>
                       </div>
                     </div>
                     <div className="flex text-yellow-400">

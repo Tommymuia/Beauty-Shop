@@ -25,17 +25,21 @@ const Login = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // TEMPORARY: Skip backend, login directly
-    if (formData.email === 'admin@gmail.com' && formData.password === 'admin123') {
-      localStorage.setItem('token', 'fake-admin-token');
-      dispatch(loginSuccess({ 
-        email: 'admin@gmail.com', 
-        is_admin: true,
-        token: 'fake-admin-token'
-      }));
-      navigate('/admin');
-    } else {
-      alert('Invalid credentials. Use: admin@gmail.com / admin123');
+    try {
+      const result = await dispatch(loginUser({ 
+        email: formData.email, 
+        password: formData.password 
+      })).unwrap();
+      
+      // Navigate based on user role
+      if (result.is_admin) {
+        navigate('/admin');
+      } else {
+        navigate('/');
+      }
+    } catch (error) {
+      // Error is handled by Redux slice
+      console.error('Login failed:', error);
     }
   };
 
