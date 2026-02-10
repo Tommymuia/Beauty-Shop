@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Mail, Phone, MapPin, Clock, Send } from 'lucide-react';
 import Notification from '../components/Notification';
+import api from '../services/api';
 
 const ContactUs = () => {
   const [formData, setFormData] = useState({
@@ -27,16 +28,19 @@ const ContactUs = () => {
     });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
     
-    // Simulate form submission
-    setTimeout(() => {
-      setIsLoading(false);
+    try {
+      await api.post('/support/', formData);
       showNotification('Thank you for contacting us! We\'ll get back to you within 24 hours.', 'success');
       setFormData({ name: '', email: '', subject: '', message: '' });
-    }, 1500);
+    } catch (error) {
+      showNotification('Failed to send message. Please try again.', 'error');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (

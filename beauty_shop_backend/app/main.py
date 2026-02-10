@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.routes import auth, products, orders, cart, users, reviews
+from app.routes import auth, products, orders, cart, users, reviews, support
 from dotenv import load_dotenv
 import os
 
@@ -26,6 +26,7 @@ app.include_router(orders, prefix="/api/orders", tags=["Orders"])
 app.include_router(cart, prefix="/api/cart", tags=["Cart"])
 app.include_router(users, prefix="/api/users", tags=["Users"])
 app.include_router(reviews, prefix="/api/reviews", tags=["Reviews"])
+app.include_router(support, prefix="/api/support", tags=["Support"])
 
 @app.get("/")
 async def root():

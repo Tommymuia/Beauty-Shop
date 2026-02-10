@@ -1,56 +1,109 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Package, User, MapPin, CreditCard, Calendar, FileText, Truck } from 'lucide-react';
+import { ordersAPI } from '../../services/api';
+import { ArrowLeft, Package, User, MapPin, CreditCard, Calendar, FileText, Truck, Loader2 } from 'lucide-react';
 
 const OrderDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  
-  // Mock order data - in real app, fetch by ID
-  const order = {
-    id: id || 'ORD-001',
-    customer: { 
-      name: 'Sarah Johnson', 
-      email: 'sarah@example.com',
-      phone: '+254 712 345 678'
-    },
-    date: '2024-01-20',
-    total: 16120.00,
-    status: 'Processing',
-    items: [
-      { name: 'Radiance Vitamin C Serum', quantity: 1, price: 6240.00, image: 'https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&q=80&w=400' },
-      { name: 'Hydra-Boost Moisturizer', quantity: 1, price: 7280.00, image: 'https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&q=80&w=400' },
-      { name: 'Velvet Matte Lipstick', quantity: 1, price: 2600.00, image: 'https://images.unsplash.com/photo-1586495777744-4413f21062fa?auto=format&fit=crop&q=80&w=400' }
-    ],
-    paymentMethod: 'M-Pesa',
-    shippingAddress: '123 Beauty Lane, Nairobi, Kenya',
-    orderNotes: 'Please handle with care. Fragile items.',
-    timeline: [
-      { status: 'Order Placed', date: '2024-01-20 10:30 AM', completed: true },
-      { status: 'Payment Confirmed', date: '2024-01-20 10:35 AM', completed: true },
-      { status: 'Processing', date: '2024-01-20 11:00 AM', completed: true },
-      { status: 'Shipped', date: 'Pending', completed: false },
-      { status: 'Delivered', date: 'Pending', completed: false }
-    ]
+  const [order, setOrder] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [currentStatus, setCurrentStatus] = useState('');
+
+  useEffect(() => {
+    fetchOrderDetails();
+  }, [id]);
+
+  const fetchOrderDetails = async () => {
+    try {
+      const response = await ordersAPI.getById(id);
+      const orderData = response.data;
+      
+      // Parse JSON fields
+      if (orderData.customer) {
+        orderData.customer = orderData.customer;
+      } else if (typeof orderData.customer_json === 'string') {
+        orderData.customer = JSON.parse(orderData.customer_json);
+      } else if (orderData.customer_json) {
+        orderData.customer = orderData.customer_json;
+      }
+      
+      if (orderData.items) {
+        orderData.items = orderData.items;
+      } else if (typeof orderData.items_json === 'string') {
+        orderData.items = JSON.parse(orderData.items_json);
+      } else if (orderData.items_json) {
+        orderData.items = orderData.items_json;
+      }
+      
+      orderData.total = orderData.total || orderData.total_amount;
+      orderData.createdAt = orderData.createdAt || orderData.created_at;
+      
+      setOrder(orderData);
+      setCurrentStatus(orderData.status);
+    } catch (error) {
+      console.error('Failed to fetch order:', error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const updateOrderStatus = (newStatus) => {
-    console.log(`Updating order ${order.id} to ${newStatus}`);
+  const updateOrderStatus = async (newStatus) => {
+    try {
+      await ordersAPI.updateStatus(order.id, newStatus);
+      setCurrentStatus(newStatus);
+      setOrder({ ...order, status: newStatus });
+    } catch (error) {
+      console.error('Failed to update status:', error);
+    }
   };
 
   const generateInvoice = () => {
-    console.log(`Generating invoice for order ${order.id}`);
+    navigate(`/admin/orders/${order.id}/invoice`);
   };
 
   const getStatusColor = (status) => {
-    switch (status) {
-      case 'Processing': return 'bg-yellow-100 text-yellow-800';
-      case 'Shipped': return 'bg-blue-100 text-blue-800';
-      case 'Delivered': return 'bg-green-100 text-green-800';
-      case 'Cancelled': return 'bg-red-100 text-red-800';
+    const statusLower = status?.toLowerCase();
+    switch (statusLower) {
+      case 'processing': return 'bg-yellow-100 text-yellow-800';
+      case 'shipped': return 'bg-blue-100 text-blue-800';
+      case 'delivered': return 'bg-green-100 text-green-800';
+      case 'cancelled': return 'bg-red-100 text-red-800';
+      case 'paid': return 'bg-green-100 text-green-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
+
+  const getTimelineSteps = () => {
+    const statusLower = currentStatus?.toLowerCase();
+    return [
+      { status: 'Order Placed', completed: true },
+      { status: 'Payment Confirmed', completed: statusLower === 'paid' || statusLower === 'processing' || statusLower === 'shipped' || statusLower === 'delivered' },
+      { status: 'Processing', completed: statusLower === 'processing' || statusLower === 'shipped' || statusLower === 'delivered' },
+      { status: 'Shipped', completed: statusLower === 'shipped' || statusLower === 'delivered' },
+      { status: 'Delivered', completed: statusLower === 'delivered' }
+    ];
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <Loader2 className="animate-spin text-pink-600" size={48} />
+      </div>
+    );
+  }
+
+  if (!order) {
+    return (
+      <div className="text-center py-12">
+        <Package size={64} className="mx-auto text-gray-300 mb-4" />
+        <h3 className="text-xl font-medium text-gray-900 mb-2">Order Not Found</h3>
+        <button onClick={() => navigate('/admin/orders')} className="text-pink-600 hover:text-pink-700">
+          Back to Orders
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -78,15 +131,14 @@ const OrderDetails = () => {
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
             <h2 className="text-lg font-serif text-gray-900 mb-4">Order Items</h2>
             <div className="space-y-4">
-              {order.items.map((item, index) => (
+              {order.items?.map((item, index) => (
                 <div key={index} className="flex items-center gap-4 p-4 border border-gray-100 rounded-xl">
-                  <img src={item.image} alt={item.name} className="w-16 h-16 object-cover rounded-lg" />
                   <div className="flex-1">
                     <h3 className="font-medium text-gray-900">{item.name}</h3>
                     <p className="text-sm text-gray-500">Quantity: {item.quantity}</p>
                   </div>
                   <div className="text-right">
-                    <p className="font-medium text-gray-900">Kshs. {item.price.toLocaleString()}</p>
+                    <p className="font-medium text-gray-900">Kshs. {(item.totalPrice || item.price * item.quantity)?.toLocaleString()}</p>
                   </div>
                 </div>
               ))}
@@ -95,7 +147,7 @@ const OrderDetails = () => {
             <div className="border-t border-gray-100 mt-6 pt-4">
               <div className="flex justify-between items-center">
                 <span className="text-lg font-medium text-gray-900">Total</span>
-                <span className="text-xl font-bold text-gray-900">Kshs. {order.total.toLocaleString()}</span>
+                <span className="text-xl font-bold text-gray-900">Kshs. {order.total?.toLocaleString()}</span>
               </div>
             </div>
           </div>
@@ -104,7 +156,7 @@ const OrderDetails = () => {
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
             <h2 className="text-lg font-serif text-gray-900 mb-4">Order Timeline</h2>
             <div className="space-y-4">
-              {order.timeline.map((step, index) => (
+              {getTimelineSteps().map((step, index) => (
                 <div key={index} className="flex items-center gap-4">
                   <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
                     step.completed ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-400'
@@ -115,7 +167,6 @@ const OrderDetails = () => {
                     <p className={`font-medium ${step.completed ? 'text-gray-900' : 'text-gray-500'}`}>
                       {step.status}
                     </p>
-                    <p className="text-sm text-gray-500">{step.date}</p>
                   </div>
                 </div>
               ))}
@@ -132,18 +183,19 @@ const OrderDetails = () => {
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <span className="text-sm text-gray-500">Current Status</span>
-                <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(order.status)}`}>
-                  {order.status}
+                <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(currentStatus)}`}>
+                  {currentStatus?.toUpperCase()}
                 </span>
               </div>
               
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Update Status</label>
                 <select
-                  value={order.status}
+                  value={currentStatus}
                   onChange={(e) => updateOrderStatus(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
                 >
+                  <option value="Paid">Paid</option>
                   <option value="Processing">Processing</option>
                   <option value="Shipped">Shipped</option>
                   <option value="Delivered">Delivered</option>
@@ -160,24 +212,24 @@ const OrderDetails = () => {
               <div className="flex items-center gap-3">
                 <User size={16} className="text-gray-400" />
                 <div>
-                  <p className="font-medium text-gray-900">{order.customer.name}</p>
-                  <p className="text-sm text-gray-500">{order.customer.email}</p>
+                  <p className="font-medium text-gray-900">{order.customer?.firstName} {order.customer?.lastName}</p>
+                  <p className="text-sm text-gray-500">{order.customer?.email}</p>
                 </div>
               </div>
               
               <div className="flex items-center gap-3">
                 <MapPin size={16} className="text-gray-400" />
-                <p className="text-sm text-gray-600">{order.shippingAddress}</p>
+                <p className="text-sm text-gray-600">{order.customer?.address}, {order.customer?.city}</p>
               </div>
               
               <div className="flex items-center gap-3">
                 <CreditCard size={16} className="text-gray-400" />
-                <p className="text-sm text-gray-600">{order.paymentMethod}</p>
+                <p className="text-sm text-gray-600">{order.customer?.paymentMethod || 'M-Pesa'}</p>
               </div>
               
               <div className="flex items-center gap-3">
                 <Calendar size={16} className="text-gray-400" />
-                <p className="text-sm text-gray-600">{order.date}</p>
+                <p className="text-sm text-gray-600">{new Date(order.createdAt).toLocaleDateString()}</p>
               </div>
             </div>
           </div>
@@ -188,18 +240,10 @@ const OrderDetails = () => {
             <div className="space-y-3">
               <button
                 onClick={generateInvoice}
-                className="w-full flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                className="w-full flex items-center gap-2 px-4 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700 transition-colors"
               >
                 <FileText size={16} />
-                Generate Invoice
-              </button>
-              
-              <button 
-                onClick={() => window.open('https://track.example.com', '_blank')}
-                className="w-full flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-              >
-                <Truck size={16} />
-                Track Shipment
+                View Invoice
               </button>
             </div>
           </div>

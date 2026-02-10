@@ -1,71 +1,33 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Mail, MessageSquare, Clock, User, Phone, 
   CheckCircle, AlertCircle, Search, Filter, Eye, Reply
 } from 'lucide-react';
+import api from '../../services/api';
 
 const CustomerSupport = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [selectedMessage, setSelectedMessage] = useState(null);
+  const [messages, setMessages] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Mock contact messages data
-  const messages = [
-    {
-      id: 1,
-      name: 'Sarah Johnson',
-      email: 'sarah@example.com',
-      phone: '+254 712 345 678',
-      subject: 'Product Quality Issue',
-      message: 'I received the Vitamin C Serum but it seems to have a different consistency than expected. Could you please help?',
-      date: '2024-01-20',
-      time: '10:30 AM',
-      status: 'new',
-      priority: 'medium',
-      type: 'complaint'
-    },
-    {
-      id: 2,
-      name: 'Mike Chen',
-      email: 'mike@example.com',
-      phone: '+254 701 234 567',
-      subject: 'Shipping Delay',
-      message: 'My order #ORD-001 was supposed to arrive yesterday but I haven\'t received it yet. Can you check the status?',
-      date: '2024-01-19',
-      time: '2:15 PM',
-      status: 'in-progress',
-      priority: 'high',
-      type: 'inquiry'
-    },
-    {
-      id: 3,
-      name: 'Emma Davis',
-      email: 'emma@example.com',
-      phone: '+254 722 456 789',
-      subject: 'Return Request',
-      message: 'I would like to return the lipstick I purchased as the color doesn\'t match what I expected from the website.',
-      date: '2024-01-18',
-      time: '4:45 PM',
-      status: 'resolved',
-      priority: 'low',
-      type: 'return'
-    },
-    {
-      id: 4,
-      name: 'John Smith',
-      email: 'john@example.com',
-      phone: '+254 733 567 890',
-      subject: 'Product Recommendation',
-      message: 'I have sensitive skin and I\'m looking for a gentle moisturizer. Could you recommend something from your skincare line?',
-      date: '2024-01-17',
-      time: '11:20 AM',
-      status: 'new',
-      priority: 'low',
-      type: 'inquiry'
+  useEffect(() => {
+    fetchMessages();
+  }, []);
+
+  const fetchMessages = async () => {
+    try {
+      const response = await api.get('/support/');
+      setMessages(response.data);
+    } catch (error) {
+      console.error('Failed to fetch support messages:', error);
+    } finally {
+      setIsLoading(false);
     }
-  ];
+  };
 
-  const statusOptions = ['all', 'new', 'in-progress', 'resolved'];
+  const statusOptions = ['all', 'pending', 'resolved', 'closed'];
   
   const filteredMessages = messages.filter(message => {
     const matchesSearch = message.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -77,9 +39,9 @@ const CustomerSupport = () => {
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'new': return 'bg-blue-100 text-blue-800';
-      case 'in-progress': return 'bg-yellow-100 text-yellow-800';
+      case 'pending': return 'bg-blue-100 text-blue-800';
       case 'resolved': return 'bg-green-100 text-green-800';
+      case 'closed': return 'bg-gray-100 text-gray-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
@@ -102,8 +64,13 @@ const CustomerSupport = () => {
     }
   };
 
-  const updateMessageStatus = (messageId, newStatus) => {
-    console.log(`Updating message ${messageId} to ${newStatus}`);
+  const updateMessageStatus = async (messageId, newStatus) => {
+    try {
+      await api.put(`/support/${messageId}/status`, { status: newStatus });
+      fetchMessages();
+    } catch (error) {
+      console.error('Failed to update status:', error);
+    }
   };
 
   const handleReply = (message) => {
@@ -129,11 +96,11 @@ const CustomerSupport = () => {
         <div className="flex items-center gap-4 text-sm text-gray-500">
           <div className="flex items-center gap-2">
             <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-            <span>{messages.filter(m => m.status === 'new').length} New</span>
+            <span>{messages.filter(m => m.status === 'pending').length} Pending</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
-            <span>{messages.filter(m => m.status === 'in-progress').length} In Progress</span>
+            <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+            <span>{messages.filter(m => m.status === 'resolved').length} Resolved</span>
           </div>
         </div>
       </div>
@@ -201,18 +168,15 @@ const CustomerSupport = () => {
                       </div>
                       <div className="flex items-center gap-1">
                         <Clock size={14} />
-                        <span>{message.date} at {message.time}</span>
+                        <span>{new Date(message.created_at).toLocaleDateString()}</span>
                       </div>
                     </div>
                   </div>
                 </div>
                 
                 <div className="flex items-center gap-3">
-                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${getPriorityColor(message.priority)}`}>
-                    {message.priority} priority
-                  </span>
                   <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(message.status)}`}>
-                    {message.status.replace('-', ' ')}
+                    {message.status}
                   </span>
                   
                   <select
@@ -220,9 +184,9 @@ const CustomerSupport = () => {
                     onChange={(e) => updateMessageStatus(message.id, e.target.value)}
                     className="px-3 py-1 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-pink-500 focus:border-transparent"
                   >
-                    <option value="new">New</option>
-                    <option value="in-progress">In Progress</option>
+                    <option value="pending">Pending</option>
                     <option value="resolved">Resolved</option>
+                    <option value="closed">Closed</option>
                   </select>
                 </div>
               </div>
@@ -235,11 +199,7 @@ const CustomerSupport = () => {
               {/* Contact Info & Actions */}
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div className="flex items-center gap-4 text-sm text-gray-500">
-                  <div className="flex items-center gap-1">
-                    <Phone size={14} />
-                    <span>{message.phone}</span>
-                  </div>
-                  <span className="capitalize">{message.type}</span>
+                  <span>{message.subject}</span>
                 </div>
                 
                 <div className="flex gap-3">

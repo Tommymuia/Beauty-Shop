@@ -22,7 +22,7 @@ const OrderHistory = () => {
     );
   }
 
-  if (orders.length === 0) {
+  if (!orders || orders.length === 0) {
     return (
       <div className="max-w-4xl mx-auto px-6 py-12 text-center">
         <Package size={64} className="mx-auto text-gray-300 mb-4" />

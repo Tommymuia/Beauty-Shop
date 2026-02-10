@@ -21,6 +21,7 @@ export const authAPI = {
   register: (email, password) => api.post('/auth/register', { email, password }),
   login: (email, password) => api.post('/auth/login', { email, password }),
   getProfile: () => api.get('/auth/me'),
+  updateProfile: (profileData) => api.put('/auth/me', profileData),
 };
 
 export const productsAPI = {

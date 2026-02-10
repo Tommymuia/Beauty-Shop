@@ -82,11 +82,11 @@ const Checkout = () => {
       // Create order via API
       const result = await dispatch(createOrder(orderPayload)).unwrap();
       
-      // Clear Redux Cart
-      dispatch(clearCart());
+      // Navigate to Order Confirmation page FIRST (before clearing cart to avoid redirect)
+      navigate(`/order-confirmation/${result.id}`);
       
-      // Navigate to Invoice
-      navigate(`/invoice/${result.id}`);
+      // Clear Redux Cart after navigation
+      setTimeout(() => dispatch(clearCart()), 100);
       
     } catch (error) {
       console.error("Checkout failed", error);
@@ -232,7 +232,7 @@ const Checkout = () => {
 
       {/* M-Pesa Payment Modal */}
       {showMpesaModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-gradient-to-br from-pink-50 to-white flex items-center justify-center z-50 p-4">
           <div className="max-w-md w-full">
             <MpesaPayment
               amount={totalAmount}

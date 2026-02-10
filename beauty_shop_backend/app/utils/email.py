@@ -45,5 +45,10 @@ def send_invoice_email(recipient_email: str, invoice_no: str, pdf_path: str):
             smtp.send_message(msg)
             
         print(f"Successfully sent email to {recipient_email}")
+    except TypeError as e:
+        if 'usedforsecurity' in str(e):
+            print(f"Email sending skipped due to Python version compatibility issue: {e}")
+        else:
+            print(f"Failed to send email: {e}")
     except Exception as e:
         print(f"Failed to send email: {e}")

@@ -23,7 +23,8 @@ router = APIRouter()
 def create_order(
     payload: OrderCreate,
     background_tasks: BackgroundTasks,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
     """
     Public endpoint used by frontend to create an order.
@@ -31,6 +32,11 @@ def create_order(
     """
     # create order record and return structured response
     order_obj = create_order_record(db, payload)
+    
+    # Associate order with authenticated user
+    order_obj.user_id = current_user.id
+    db.commit()
+    db.refresh(order_obj)
 
     # Generate PDF and send email in background
     try:
@@ -56,7 +62,21 @@ def get_all_orders(db: Session = Depends(get_db)):
     """Admin endpoint to fetch all orders."""
     orders = db.query(Order).order_by(Order.created_at.desc()).all()
     return [{
-        "id": order.id,
+        "id": order.public_id or order.id,
+        "invoice_number": order.invoice_number or f"ORD-{order.id}",
+        "total_amount": order.total_amount,
+        "status": order.status,
+        "created_at": order.created_at,
+        "customer_json": order.customer_json,
+        "items_json": order.items_json
+    } for order in orders]
+
+@router.get("/", response_model=list)
+def get_user_orders(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """Get orders for the authenticated user."""
+    orders = db.query(Order).filter(Order.user_id == current_user.id).order_by(Order.created_at.desc()).all()
+    return [{
+        "id": order.public_id or order.id,
         "invoice_number": order.invoice_number or f"ORD-{order.id}",
         "total_amount": order.total_amount,
         "status": order.status,

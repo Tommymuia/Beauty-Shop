@@ -20,32 +20,57 @@ const ManageOrders = () => {
     dispatch(fetchAllOrders());
   }, [dispatch]);
 
-  const statusOptions = ['all', 'Processing', 'Shipped', 'Delivered', 'Cancelled'];
+  const statusOptions = ['all', 'Paid', 'Processing', 'Shipped', 'Delivered', 'Cancelled'];
   
   const filteredOrders = orders.filter(order => {
     const customerData = order.customer_json ? JSON.parse(order.customer_json) : {};
     const matchesSearch = order.invoice_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          customerData.firstName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          customerData.lastName?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || order.status === statusFilter.toLowerCase();
-    return matchesSearch && matchesStatus;
+    const matchesStatus = statusFilter === 'all' || order.status?.toLowerCase() === statusFilter.toLowerCase();
+    
+    // Date filtering
+    let matchesDate = true;
+    if (dateFilter !== 'all') {
+      const orderDate = new Date(order.created_at);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      if (dateFilter === 'today') {
+        matchesDate = orderDate >= today;
+      } else if (dateFilter === 'week') {
+        const weekAgo = new Date(today);
+        weekAgo.setDate(weekAgo.getDate() - 7);
+        matchesDate = orderDate >= weekAgo;
+      } else if (dateFilter === 'month') {
+        const monthAgo = new Date(today);
+        monthAgo.setMonth(monthAgo.getMonth() - 1);
+        matchesDate = orderDate >= monthAgo;
+      }
+    }
+    
+    return matchesSearch && matchesStatus && matchesDate;
   });
 
   const getStatusIcon = (status) => {
-    switch (status) {
-      case 'Processing': return <Clock size={16} className="text-yellow-600" />;
-      case 'Shipped': return <Truck size={16} className="text-blue-600" />;
-      case 'Delivered': return <CheckCircle size={16} className="text-green-600" />;
+    const statusLower = status?.toLowerCase();
+    switch (statusLower) {
+      case 'processing': return <Clock size={16} className="text-yellow-600" />;
+      case 'shipped': return <Truck size={16} className="text-blue-600" />;
+      case 'delivered': return <CheckCircle size={16} className="text-green-600" />;
+      case 'paid': return <CheckCircle size={16} className="text-green-600" />;
       default: return <Package size={16} className="text-gray-600" />;
     }
   };
 
   const getStatusColor = (status) => {
-    switch (status) {
-      case 'Processing': return 'bg-yellow-100 text-yellow-800';
-      case 'Shipped': return 'bg-blue-100 text-blue-800';
-      case 'Delivered': return 'bg-green-100 text-green-800';
-      case 'Cancelled': return 'bg-red-100 text-red-800';
+    const statusLower = status?.toLowerCase();
+    switch (statusLower) {
+      case 'processing': return 'bg-yellow-100 text-yellow-800';
+      case 'shipped': return 'bg-blue-100 text-blue-800';
+      case 'delivered': return 'bg-green-100 text-green-800';
+      case 'cancelled': return 'bg-red-100 text-red-800';
+      case 'paid': return 'bg-green-100 text-green-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
@@ -61,16 +86,18 @@ const ManageOrders = () => {
 
   const exportOrders = () => {
     const csvContent = [
-      ['Order ID', 'Customer', 'Email', 'Date', 'Total', 'Status', 'Payment Method'],
-      ...filteredOrders.map(order => [
-        order.id,
-        order.customer.name,
-        order.customer.email,
-        order.date,
-        `Kshs. ${order.total.toLocaleString()}`,
-        order.status,
-        order.paymentMethod
-      ])
+      ['Order ID', 'Customer', 'Email', 'Date', 'Total', 'Status'],
+      ...filteredOrders.map(order => {
+        const customer = order.customer_json ? JSON.parse(order.customer_json) : {};
+        return [
+          order.invoice_number || order.id,
+          `${customer.firstName || ''} ${customer.lastName || ''}`.trim(),
+          customer.email || '',
+          new Date(order.created_at).toLocaleDateString(),
+          `Kshs. ${order.total_amount?.toLocaleString() || 0}`,
+          order.status || ''
+        ];
+      })
     ].map(row => row.join(',')).join('\n');
     
     const blob = new Blob([csvContent], { type: 'text/csv' });
@@ -89,32 +116,8 @@ const ManageOrders = () => {
   };
 
   const generateInvoice = (order) => {
-    // Generate and download invoice
-    const invoiceContent = `
-INVOICE
-
-Order ID: ${order.id}
-Customer: ${order.customer.name}
-Email: ${order.customer.email}
-Date: ${order.date}
-
-Items:
-${order.items.map(item => `${item.name} x${item.quantity} - Kshs. ${item.price.toLocaleString()}`).join('\n')}
-
-Total: Kshs. ${order.total.toLocaleString()}
-Payment Method: ${order.paymentMethod}
-Shipping Address: ${order.shippingAddress}
-    `;
-    
-    const blob = new Blob([invoiceContent], { type: 'text/plain' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `invoice-${order.id}.txt`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    window.URL.revokeObjectURL(url);
+    // Navigate to admin invoice page
+    navigate(`/admin/orders/${order.id}/invoice`);
   };
 
   return (
@@ -230,6 +233,7 @@ Shipping Address: ${order.shippingAddress}
                   onChange={(e) => updateOrderStatus(order.id, e.target.value)}
                   className="px-3 py-1 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-pink-500 focus:border-transparent"
                 >
+                  <option value="Paid">Paid</option>
                   <option value="Processing">Processing</option>
                   <option value="Shipped">Shipped</option>
                   <option value="Delivered">Delivered</option>
@@ -277,10 +281,10 @@ Shipping Address: ${order.shippingAddress}
             <div className="flex gap-3 mt-6 pt-4 border-t border-gray-100">
               <button
                 onClick={() => generateInvoice(order)}
-                className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm"
+                className="flex items-center gap-2 px-4 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700 transition-colors text-sm"
               >
                 <FileText size={16} />
-                Generate Invoice
+                View Invoice
               </button>
               <button 
                 onClick={() => viewOrderDetails(order)}

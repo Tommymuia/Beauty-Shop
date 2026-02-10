@@ -7,6 +7,8 @@ import ProductDetails from '../features/products/ProductDetails';
 import Cart from '../features/cart/Cart';
 import Checkout from '../features/orders/Checkout';
 import Invoice from '../features/orders/Invoice';
+import OrderConfirmation from '../features/orders/OrderConfirmation';
+import OrderHistory from '../features/orders/OrderHistory';
 import CategoryPage from '../pages/CategoryPage';
 import Login from '../features/auth/Login';
 import Register from '../features/auth/Register';
@@ -29,6 +31,7 @@ import AdminProfile from '../features/admin/AdminProfile';
 import CustomerSupport from '../features/admin/CustomerSupport';
 import AddUser from '../features/admin/AddUser';
 import AdminProductView from '../features/admin/AdminProductView';
+import AdminInvoice from '../features/admin/AdminInvoice';
 
 const AppRoutes = () => {
   return (
@@ -56,6 +59,7 @@ const AppRoutes = () => {
       <Route path="/admin/products/edit/:id" element={<AdminLayout><EditProduct /></AdminLayout>} />
       <Route path="/admin/orders" element={<AdminLayout><ManageOrders /></AdminLayout>} />
       <Route path="/admin/orders/:id" element={<AdminLayout><OrderDetails /></AdminLayout>} />
+      <Route path="/admin/orders/:orderId/invoice" element={<AdminLayout><AdminInvoice /></AdminLayout>} />
       <Route path="/admin/users" element={<AdminLayout><ManageUsers /></AdminLayout>} />
       <Route path="/admin/users/new" element={<AdminLayout><AddUser /></AdminLayout>} />
       <Route path="/admin/support" element={<AdminLayout><CustomerSupport /></AdminLayout>} />
@@ -69,7 +73,9 @@ const AppRoutes = () => {
       <Route path="/product/:id" element={<MainLayout><ProductDetails /></MainLayout>} />
       <Route path="/cart" element={<MainLayout><Cart /></MainLayout>} />
       <Route path="/checkout" element={<MainLayout><Checkout /></MainLayout>} />
+      <Route path="/order-confirmation/:orderId" element={<MainLayout><OrderConfirmation /></MainLayout>} />
       <Route path="/invoice/:orderId" element={<MainLayout><Invoice /></MainLayout>} />
+      <Route path="/orders" element={<MainLayout><OrderHistory /></MainLayout>} />
     </Routes>
   );
 };

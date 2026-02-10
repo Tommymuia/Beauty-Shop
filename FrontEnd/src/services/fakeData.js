@@ -97,19 +97,19 @@ export const categories = [
     id: 1,
     title: "Skincare",
     subtitle: "Nourish & Glow",
-    image: "https://via.placeholder.com/600x400/FFB6C1/FFFFFF?text=Skincare"
+    image: "https://images.unsplash.com/photo-1620916566398-39f1143ab7be?q=80&w=800&auto=format&fit=crop"
   },
   {
     id: 2,
     title: "Haircare",
     subtitle: "Strength & Shine",
-    image: "https://via.placeholder.com/600x400/FFB6C1/FFFFFF?text=Haircare"
+    image: "https://images.unsplash.com/photo-1734892497171-2685f9994742?q=80&w=800&auto=format&fit=crop"
   },
   {
     id: 3,
     title: "Makeup",
     subtitle: "Define & Enhance",
-    image: "https://via.placeholder.com/600x400/FFB6C1/FFFFFF?text=Makeup"
+    image: "https://images.unsplash.com/photo-1542452255191-c85a98f2c5d1?q=80&w=800&auto=format&fit=crop"
   }
 ];
 
