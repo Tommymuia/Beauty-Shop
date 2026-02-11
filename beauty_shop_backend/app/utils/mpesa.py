@@ -9,8 +9,7 @@ import logging
 # Load environment variables
 load_dotenv()
 
-# Set up logging
-logging.basicConfig(level=logging.INFO)
+# Get logger for this module
 logger = logging.getLogger(__name__)
 
 # Safaricom Sandbox Credentials from environment
@@ -113,7 +112,7 @@ def initiate_stk_push(phone: str, amount: int, invoice_no: str):
     headers = {"Authorization": f"Bearer {access_token}"}
     
     # Get callback URL from environment, fallback to a default
-    callback_url = os.getenv("MPESA_CALLBACK_URL", "https://yourdomain.com/api/orders/mpesa/callback")
+    callback_url = os.getenv("MPESA_CALLBACK_URL", "https://REPLACE_WITH_YOUR_DOMAIN.com/api/orders/mpesa/callback")
     
     payload = {
         "BusinessShortCode": BUSINESS_SHORTCODE,

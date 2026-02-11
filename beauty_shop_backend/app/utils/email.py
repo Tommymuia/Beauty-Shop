@@ -7,8 +7,7 @@ import logging
 # Load .env to get your Gmail credentials
 load_dotenv()
 
-# Set up logging
-logging.basicConfig(level=logging.INFO)
+# Get logger for this module
 logger = logging.getLogger(__name__)
 
 def send_invoice_email(recipient_email: str, invoice_no: str, pdf_path: str):
