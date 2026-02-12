@@ -15,9 +15,15 @@ Base.metadata.create_all(bind=engine)
 app = FastAPI(title="Project 8: Beauty Shop API")
 
 # CORS Configuration - Must be before routes
+# Note: allow_credentials=True cannot be used with allow_origins=["*"]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allow all origins for development
+    allow_origins=[
+        "http://localhost:3000",
+        "http://localhost:5173",
+        "https://beauty-shop-murex.vercel.app",
+    ],
+    allow_origin_regex=r"https://.*\.vercel\.app",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
