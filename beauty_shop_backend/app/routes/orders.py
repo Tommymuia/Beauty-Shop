@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, Request
 from sqlalchemy.orm import Session
 from pydantic import BaseModel  # Added for Option A
 from app.database import get_db
@@ -11,6 +11,9 @@ from app.schemas import OrderCreate, OrderDetailResponse
 from app.services.order_service import create_order_record, fetch_order_by_public_id
 import uuid, time
 import json
+import logging
+
+logger = logging.getLogger(__name__)
 
 # 1. Define the schema to fetch phone number from the request body
 class CheckoutRequest(BaseModel):
@@ -183,3 +186,109 @@ def checkout(
         },
         "mpesa_status": mpesa_response
     }
+
+
+@router.post("/mpesa-callback")
+async def mpesa_callback(request: Request, db: Session = Depends(get_db)):
+    """
+    M-Pesa callback endpoint - receives payment notifications from Safaricom.
+    This endpoint is called by Safaricom after customer completes/cancels payment.
+    """
+    try:
+        # Get the raw callback data from Safaricom
+        callback_data = await request.json()
+        logger.info(f"M-Pesa Callback received: {json.dumps(callback_data, indent=2)}")
+        
+        # Extract the callback body
+        result_code = callback_data.get("Body", {}).get("stkCallback", {}).get("ResultCode")
+        result_desc = callback_data.get("Body", {}).get("stkCallback", {}).get("ResultDesc")
+        
+        # Get transaction details
+        callback_metadata = callback_data.get("Body", {}).get("stkCallback", {}).get("CallbackMetadata", {})
+        items = callback_metadata.get("Item", [])
+        
+        # Parse metadata
+        mpesa_receipt = None
+        phone_number = None
+        amount = None
+        
+        for item in items:
+            name = item.get("Name")
+            value = item.get("Value")
+            
+            if name == "MpesaReceiptNumber":
+                mpesa_receipt = value
+            elif name == "PhoneNumber":
+                phone_number = value
+            elif name == "Amount":
+                amount = value
+        
+        # Find order by invoice number from AccountReference
+        merchant_request_id = callback_data.get("Body", {}).get("stkCallback", {}).get("MerchantRequestID")
+        checkout_request_id = callback_data.get("Body", {}).get("stkCallback", {}).get("CheckoutRequestID")
+        
+        if result_code == 0:
+            # Payment successful
+            logger.info(f"Payment SUCCESS - Receipt: {mpesa_receipt}, Phone: {phone_number}, Amount: {amount}")
+            
+            # TODO: Update order status in database
+            # You can store mpesa_receipt, update status to 'paid', etc.
+            # Example:
+            # order = db.query(Order).filter(Order.invoice_number == account_ref).first()
+            # if order:
+            #     order.status = "paid"
+            #     order.payment_reference = mpesa_receipt
+            #     db.commit()
+            
+            return {
+                "ResultCode": 0,
+                "ResultDesc": "Success"
+            }
+        else:
+            # Payment failed or cancelled
+            logger.warning(f"Payment FAILED - Code: {result_code}, Desc: {result_desc}")
+            
+            return {
+                "ResultCode": 0,
+                "ResultDesc": "Callback received"
+            }
+            
+    except Exception as e:
+        logger.error(f"Error processing M-Pesa callback: {e}")
+        # Always return success to Safaricom to avoid retries
+        return {
+            "ResultCode": 0,
+            "ResultDesc": "Callback received"
+        }
+
+@router.post("/mpesa/callback")
+async def mpesa_callback(payload: dict):
+    """
+    M-Pesa callback endpoint.
+    Safaricom sends payment confirmation here.
+    """
+    import logging
+    logger = logging.getLogger(__name__)
+    
+    try:
+        logger.info(f"M-Pesa Callback received: {json.dumps(payload, indent=2)}")
+        
+        # Extract callback data
+        result_code = payload.get("Body", {}).get("stkCallback", {}).get("ResultCode")
+        result_desc = payload.get("Body", {}).get("stkCallback", {}).get("ResultDesc")
+        
+        if result_code == 0:
+            # Payment successful
+            logger.info(f"Payment successful: {result_desc}")
+            # TODO: Update order status in database
+            # merchant_request_id = payload.get("Body", {}).get("stkCallback", {}).get("MerchantRequestID")
+            # checkout_request_id = payload.get("Body", {}).get("stkCallback", {}).get("CheckoutRequestID")
+        else:
+            # Payment failed or cancelled
+            logger.warning(f"Payment failed: {result_desc}")
+        
+        return {"ResultCode": 0, "ResultDesc": "Callback received successfully"}
+        
+    except Exception as e:
+        logger.error(f"Error processing M-Pesa callback: {e}")
+        return {"ResultCode": 1, "ResultDesc": f"Error: {str(e)}"}
