@@ -15,9 +15,10 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-# 1. Define the schema to fetch phone number from the request body
+# 1. Define the schema to fetch phone number and cart items from the request body
 class CheckoutRequest(BaseModel):
     phone_number: str
+    cart_items: list = []  # Optional: items from frontend cart
 
 router = APIRouter()
 
@@ -117,49 +118,83 @@ def update_order_status(order_id: int, payload: dict, db: Session = Depends(get_
 
 @router.post("/checkout")
 def checkout(
-    payload: CheckoutRequest, # Now we fetch data from the customer's request
+    payload: CheckoutRequest,
     background_tasks: BackgroundTasks, 
     db: Session = Depends(get_db), 
     current_user: User = Depends(get_current_user)
 ):
-    # 1. Validate Cart
-    cart_items = db.query(CartItem).filter(CartItem.user_id == current_user.id).all()
-    if not cart_items:
-        raise HTTPException(status_code=400, detail="Cart is empty")
-
-    # 2. Get Phone Number from the Request (No more hardcoding!)
+    # 1. Get Phone Number from the Request
     user_phone = payload.phone_number 
 
-    # 3. Build Detailed Items List
+    # 2. Try to get cart items from database first, then from payload
+    cart_items_db = db.query(CartItem).filter(CartItem.user_id == current_user.id).all()
+    
     items_for_pdf = []
-    for item in cart_items:
-        items_for_pdf.append({
-            "name": item.product.name,
-            "quantity": item.quantity,
-            "price": item.product.price
-        })
+    total = 0
+    
+    if cart_items_db:
+        # Use database cart
+        for item in cart_items_db:
+            items_for_pdf.append({
+                "name": item.product.name,
+                "quantity": item.quantity,
+                "price": item.product.price
+            })
+            total += item.product.price * item.quantity
+    elif payload.cart_items:
+        # Use frontend cart from payload (items already have all details)
+        for item in payload.cart_items:
+            quantity = item.get('quantity', 1)
+            price = float(item.get('price', 0))
+            items_for_pdf.append({
+                "name": item.get('name'),
+                "quantity": quantity,
+                "price": price
+            })
+            total += price * quantity
+    else:
+        raise HTTPException(status_code=400, detail="Cart is empty")
+    
+    if not items_for_pdf:
+        raise HTTPException(status_code=400, detail="Cart is empty")
 
-    # 4. Financials
-    total = sum(item.product.price * item.quantity for item in cart_items)
+    # 3. Generate invoice number
     invoice_no = f"INV-{uuid.uuid4().hex[:6].upper()}"
     
-    # 5. Save Order & Clear Cart
+    # 4. Save Order (don't clear database cart if using frontend cart)
     new_order = Order(
         user_id=current_user.id,
         total_amount=total,
         invoice_number=invoice_no,
-        status="pending"
+        status="pending",
+        public_id=str(uuid.uuid4())
     )
+    
+    # Store customer and items data for order confirmation page
+    customer_data = {
+        "firstName": current_user.email.split('@')[0],
+        "lastName": "",
+        "email": current_user.email,
+        "address": "",
+        "city": "",
+        "zip": ""
+    }
+    new_order.set_customer(customer_data)
+    new_order.set_items(items_for_pdf)
+    
     db.add(new_order)
     
-    db.query(CartItem).filter(CartItem.user_id == current_user.id).delete()
+    # Only clear database cart if it was used
+    if cart_items_db:
+        db.query(CartItem).filter(CartItem.user_id == current_user.id).delete()
+    
     db.commit()
     db.refresh(new_order)
 
-    # 6. Generate PDF Invoice
+    # 5. Generate PDF Invoice
     pdf_path = generate_invoice_pdf(invoice_no, total, current_user.email, items_for_pdf)
 
-    # 7. M-Pesa Trigger using the dynamic phone number
+    # 6. M-Pesa Trigger using the dynamic phone number
     try:
         mpesa_response = initiate_stk_push(
             phone=user_phone,
@@ -169,7 +204,7 @@ def checkout(
     except Exception as e:
         mpesa_response = {"error": "M-Pesa Service Unavailable", "details": str(e)}
 
-    # 8. Send Email in Background
+    # 7. Send Email in Background
     background_tasks.add_task(
         send_invoice_email, 
         recipient_email=current_user.email, 
@@ -179,6 +214,7 @@ def checkout(
 
     return {
         "message": "Checkout initiated.",
+        "order_id": new_order.public_id,
         "order_details": {
             "invoice": invoice_no, 
             "total": total,

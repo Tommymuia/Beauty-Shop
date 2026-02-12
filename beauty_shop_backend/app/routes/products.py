@@ -14,6 +14,12 @@ def get_products(
     db: Session = Depends(get_db)
 ):
     query = db.query(Product)
+    # Filter out products with NULL required fields
+    query = query.filter(
+        Product.name.isnot(None),
+        Product.price.isnot(None),
+        Product.category_id.isnot(None)
+    )
     if category_id:
         query = query.filter(Product.category_id == category_id)
     if search:

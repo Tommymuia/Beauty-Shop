@@ -1,3 +1,7 @@
+"""
+DEPRECATED - This file has been replaced by seed_products.py
+Use seed_products.py instead for seeding products with images
+"""
 from app.database import SessionLocal, engine
 from app.models import Category, Product, Base
 

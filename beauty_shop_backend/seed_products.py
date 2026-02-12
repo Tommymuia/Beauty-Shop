@@ -1,3 +1,8 @@
+"""
+PRIMARY SEED FILE - Use this file to seed products with images
+Run: python seed_products.py
+This seeds 90 products (30 per category) with Unsplash images
+"""
 import sys
 from sqlalchemy.orm import Session
 from app.database import SessionLocal, engine
