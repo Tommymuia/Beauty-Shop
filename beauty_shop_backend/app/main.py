@@ -1,11 +1,16 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.routes import auth, products, orders, cart, users, reviews, support
+from app.database import engine
+from app.models import Base
 from dotenv import load_dotenv
 import os
 
 # Load environment variables from .env file
 load_dotenv()
+
+# Create all database tables on startup
+Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Project 8: Beauty Shop API")
 
