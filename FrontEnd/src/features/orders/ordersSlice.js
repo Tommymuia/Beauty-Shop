@@ -21,6 +21,18 @@ export const createOrder = createAsyncThunk(
   }
 );
 
+export const checkout = createAsyncThunk(
+  'orders/checkout',
+  async (phoneNumber, { rejectWithValue }) => {
+    try {
+      const response = await ordersAPI.checkout(phoneNumber);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.detail || 'Checkout failed');
+    }
+  }
+);
+
 export const fetchUserOrders = createAsyncThunk(
   'orders/fetchUser',
   async (_, { rejectWithValue }) => {

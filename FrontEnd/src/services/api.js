@@ -42,6 +42,10 @@ export const cartAPI = {
 
 export const ordersAPI = {
   create: (orderData) => api.post('/orders/', orderData),
+  checkout: (phoneNumber, cartItems) => api.post('/orders/checkout', { 
+    phone_number: phoneNumber,
+    cart_items: cartItems 
+  }),
   getUserOrders: () => api.get('/orders/'),
   getAllOrders: () => api.get('/orders/all'),
   getById: (orderId) => api.get(`/orders/${orderId}`),

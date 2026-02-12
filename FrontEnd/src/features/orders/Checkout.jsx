@@ -47,39 +47,40 @@ const Checkout = () => {
   const handleMpesaSuccess = (transaction) => {
     setMpesaTransaction(transaction);
     setShowMpesaModal(false);
-    showNotification('M-Pesa payment successful!', 'success');
-    // Auto-submit the order
-    setTimeout(() => {
-      handleSubmit(null, transaction);
-    }, 1000);
+    showNotification('M-Pesa payment initiated successfully!', 'success');
+    
+    // Navigate to order confirmation with the order ID
+    if (transaction.orderId) {
+      setTimeout(() => {
+        navigate(`/order-confirmation/${transaction.orderId}`);
+        // Clear Redux Cart after navigation
+        setTimeout(() => dispatch(clearCart()), 100);
+      }, 1500);
+    }
   };
 
   const handleSubmit = async (e, mpesaData = null) => {
     if (e) e.preventDefault();
     
-    // If M-Pesa selected and no transaction yet, show modal
-    if (paymentMethod === 'mpesa' && !mpesaData && !mpesaTransaction) {
+    // If M-Pesa selected, show modal (checkout handled by MpesaPayment component)
+    if (paymentMethod === 'mpesa') {
       console.log('Opening M-Pesa modal...');
       setShowMpesaModal(true);
       return;
     }
     
+    // Handle card payment
     setIsProcessing(true);
 
-    const transaction = mpesaData || mpesaTransaction;
     const orderPayload = {
       customer: formData,
       items: items,
       total: totalAmount,
-      paymentMethod: paymentMethod,
-      ...(paymentMethod === 'mpesa' && transaction && { 
-        mpesaPhone: transaction.phoneNumber,
-        transactionId: transaction.transactionId 
-      })
+      paymentMethod: paymentMethod
     };
 
     try {
-      // Create order via API
+      // Create order via API (for card payment)
       const result = await dispatch(createOrder(orderPayload)).unwrap();
       
       // Navigate to Order Confirmation page FIRST (before clearing cart to avoid redirect)
@@ -204,7 +205,7 @@ const Checkout = () => {
           >
             {isProcessing ? (
               <><Loader2 className="animate-spin mr-2" /> Processing...</>
-            ) : paymentMethod === 'mpesa' && !mpesaTransaction ? (
+            ) : paymentMethod === 'mpesa' ? (
               'Pay with M-Pesa'
             ) : (
               `Complete Order - Kshs. ${totalAmount.toLocaleString()}`
@@ -236,6 +237,7 @@ const Checkout = () => {
           <div className="max-w-md w-full">
             <MpesaPayment
               amount={totalAmount}
+              cartItems={items}
               onSuccess={handleMpesaSuccess}
               onCancel={() => setShowMpesaModal(false)}
             />

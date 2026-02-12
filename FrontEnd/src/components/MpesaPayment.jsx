@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
 import { Smartphone, CheckCircle, XCircle, Loader } from 'lucide-react';
+import { ordersAPI } from '../services/api';
 
-const MpesaPayment = ({ amount, onSuccess, onCancel, userPhone = '' }) => {
+const MpesaPayment = ({ amount, onSuccess, onCancel, userPhone = '', cartItems = [] }) => {
   const [phoneNumber, setPhoneNumber] = useState(userPhone);
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState(null); // 'success', 'failed', null
+  const [errorMessage, setErrorMessage] = useState('');
+  const [mpesaResponse, setMpesaResponse] = useState(null);
 
   const formatPhoneNumber = (value) => {
     // Remove non-digits
@@ -34,26 +37,53 @@ const MpesaPayment = ({ amount, onSuccess, onCancel, userPhone = '' }) => {
 
     setIsProcessing(true);
     setPaymentStatus(null);
+    setErrorMessage('');
 
-    // Real M-Pesa integration would go here
-    // For now, simulate STK Push
-    setTimeout(() => {
-      const success = Math.random() > 0.2;
+    try {
+      // Call the real backend checkout endpoint with cart items
+      const response = await ordersAPI.checkout(phoneNumber, cartItems);
+      console.log('Checkout response:', response.data);
       
-      setIsProcessing(false);
-      setPaymentStatus(success ? 'success' : 'failed');
+      setMpesaResponse(response.data);
       
-      if (success) {
+      // Check if M-Pesa request was successful
+      const mpesaStatus = response.data.mpesa_status;
+      
+      if (mpesaStatus?.ResponseCode === '0' || mpesaStatus?.CheckoutRequestID) {
+        // STK Push sent successfully
+        setPaymentStatus('success');
+        
         setTimeout(() => {
           onSuccess({
-            transactionId: `MPX${Date.now()}`,
+            transactionId: mpesaStatus.CheckoutRequestID || `MPX${Date.now()}`,
             phoneNumber,
             amount,
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
+            orderDetails: response.data.order_details,
+            orderId: response.data.order_id
           });
         }, 1500);
+      } else if (mpesaStatus?.errorCode) {
+        // M-Pesa error
+        setPaymentStatus('failed');
+        setErrorMessage(mpesaStatus.errorMessage || 'M-Pesa payment failed');
+      } else {
+        // Unexpected response
+        setPaymentStatus('failed');
+        setErrorMessage('Unexpected response from payment gateway');
       }
-    }, 3000);
+    } catch (error) {
+      console.error('Checkout error:', error);
+      setIsProcessing(false);
+      setPaymentStatus('failed');
+      setErrorMessage(
+        error.response?.data?.detail || 
+        error.response?.data?.message || 
+        'Failed to initiate M-Pesa payment. Please try again.'
+      );
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   return (
@@ -121,9 +151,12 @@ const MpesaPayment = ({ amount, onSuccess, onCancel, userPhone = '' }) => {
           </div>
 
           {isProcessing && (
-            <div className="mt-4 p-4 bg-pink-50 rounded-xl border border-pink-100">
-              <p className="text-sm text-pink-800 text-center">
-                Please check your phone for the M-Pesa prompt and enter your PIN
+            <div className="mt-4 p-4 bg-green-50 rounded-xl border border-green-200">
+              <p className="text-sm text-green-800 text-center font-medium">
+                ⏳ Sending STK Push to {phoneNumber}...
+              </p>
+              <p className="text-xs text-gray-600 text-center mt-2">
+                Check your phone for the M-Pesa prompt and enter your PIN
               </p>
             </div>
           )}
@@ -146,11 +179,13 @@ const MpesaPayment = ({ amount, onSuccess, onCancel, userPhone = '' }) => {
             <XCircle size={32} className="text-red-600" />
           </div>
           <h4 className="text-lg font-medium text-gray-900 mb-2">Payment Failed</h4>
-          <p className="text-gray-600 mb-4">The transaction was cancelled or failed</p>
+          <p className="text-gray-600 mb-4">
+            {errorMessage || 'The transaction was cancelled or failed'}
+          </p>
           <button
             onClick={() => {
               setPaymentStatus(null);
-              setPhoneNumber('');
+              setErrorMessage('');
             }}
             className="px-6 py-2 bg-gray-900 text-white rounded-xl hover:bg-gray-800 transition-colors"
           >
