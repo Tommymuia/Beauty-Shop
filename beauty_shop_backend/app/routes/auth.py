@@ -46,16 +46,29 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
 
 @router.post("/register", response_model=Token)
 def register(user_data: UserCreate, db: Session = Depends(get_db)):
-    if db.query(User).filter(User.email == user_data.email).first():
-        raise HTTPException(status_code=400, detail="Email already registered")
+    try:
+        # Check if email already exists
+        existing_user = db.query(User).filter(User.email == user_data.email).first()
+        if existing_user:
+            raise HTTPException(status_code=400, detail="Email already registered")
+        
+        # Hash and create user
+        hashed_password = hash_password(user_data.password)
+        new_user = User(email=user_data.email, password=hashed_password)
+        db.add(new_user)
+        db.commit()
+        db.refresh(new_user)
+        
+        # Create JWT token
+        access_token = create_access_token(data={"sub": new_user.email})
+        return {"access_token": access_token, "token_type": "bearer"}
     
-    new_user = User(email=user_data.email, password=hash_password(user_data.password))
-    db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
-    
-    access_token = create_access_token(data={"sub": new_user.email})
-    return {"access_token": access_token, "token_type": "bearer"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        print(f"Registration error: {e}")
+        raise HTTPException(status_code=500, detail=f"Registration failed: {str(e)}")
 
 @router.post("/login", response_model=Token)
 def login(user_data: UserCreate, db: Session = Depends(get_db)):
