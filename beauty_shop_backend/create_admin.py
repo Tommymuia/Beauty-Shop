@@ -2,8 +2,10 @@ from werkzeug.security import generate_password_hash
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from app.models import User
+import os
 
-DATABASE_URL = "postgresql://beauty_admin:Group8@localhost:5432/beauty_shop_db"
+# Use DATABASE_URL from environment when available
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://beauty_admin:Group8@localhost:5432/beauty_shop_db")
 engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 db = SessionLocal()
