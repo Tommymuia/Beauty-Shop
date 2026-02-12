@@ -1,7 +1,6 @@
 import requests
 import base64
 from datetime import datetime
-from fastapi import HTTPException
 import os
 from dotenv import load_dotenv
 import logging
@@ -17,21 +16,23 @@ CONSUMER_KEY = os.getenv("MPESA_CONSUMER_KEY")
 CONSUMER_SECRET = os.getenv("MPESA_CONSUMER_SECRET")
 BUSINESS_SHORTCODE = os.getenv("MPESA_SHORTCODE")
 PASSKEY = os.getenv("MPESA_PASSKEY")
+CALLBACK_URL = os.getenv("MPESA_CALLBACK_URL")
 
 def get_access_token():
     """
     Get M-Pesa access token for API authentication.
     
     Returns:
-        str: Access token
-        
-    Raises:
-        HTTPException: If token fetch fails
+        tuple: (access_token, error_dict) - One will be None if there's an error
     """
     # Validate credentials
     if not all([CONSUMER_KEY, CONSUMER_SECRET]):
-        logger.error("M-Pesa credentials are missing. Please check MPESA_CONSUMER_KEY and MPESA_CONSUMER_SECRET in .env file")
-        raise HTTPException(status_code=500, detail="M-Pesa credentials not configured")
+        error = {
+            "errorCode": "500",
+            "errorMessage": "M-Pesa credentials not configured. Check MPESA_CONSUMER_KEY and MPESA_CONSUMER_SECRET in .env"
+        }
+        logger.error(error["errorMessage"])
+        return None, error
     
     url = "https://sandbox.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials"
     
@@ -41,18 +42,29 @@ def get_access_token():
         
         access_token = response.json().get("access_token")
         if not access_token:
-            logger.error("Access token not found in M-Pesa response")
-            raise HTTPException(status_code=500, detail="Failed to fetch M-Pesa token")
+            error = {"errorCode": "500", "errorMessage": "No access token in M-Pesa response"}
+            logger.error(error["errorMessage"])
+            return None, error
             
         logger.info("Successfully obtained M-Pesa access token")
-        return access_token
+        return access_token, None
         
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Network error while fetching M-Pesa token: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to fetch M-Pesa token: {str(e)}")
+    except requests.exceptions.Timeout:
+        error = {"errorCode": "504", "errorMessage": "M-Pesa authentication request timed out"}
+        logger.error(error["errorMessage"])
+        return None, error
+    except requests.exceptions.ConnectionError as e:
+        error = {"errorCode": "500", "errorMessage": f"Cannot connect to M-Pesa service: {str(e)}"}
+        logger.error(error["errorMessage"])
+        return None, error
+    except requests.exceptions.HTTPError as e:
+        error = {"errorCode": "500", "errorMessage": f"M-Pesa authentication failed: {str(e)}"}
+        logger.error(error["errorMessage"])
+        return None, error
     except Exception as e:
-        logger.error(f"Unexpected error while fetching M-Pesa token: {e}")
-        raise HTTPException(status_code=500, detail="Failed to fetch M-Pesa token")
+        error = {"errorCode": "500", "errorMessage": f"Unexpected error getting M-Pesa token: {str(e)}"}
+        logger.error(error["errorMessage"])
+        return None, error
 
 def initiate_stk_push(phone: str, amount: int, invoice_no: str):
     """
@@ -67,22 +79,22 @@ def initiate_stk_push(phone: str, amount: int, invoice_no: str):
         dict: Response from M-Pesa API
     """
     # Validate required configuration
-    if not all([BUSINESS_SHORTCODE, PASSKEY]):
-        logger.error("M-Pesa configuration is incomplete. Please check MPESA_SHORTCODE and MPESA_PASSKEY in .env file")
+    if not all([BUSINESS_SHORTCODE, PASSKEY, CALLBACK_URL]):
+        missing = []
+        if not BUSINESS_SHORTCODE: missing.append("MPESA_SHORTCODE")
+        if not PASSKEY: missing.append("MPESA_PASSKEY")
+        if not CALLBACK_URL: missing.append("MPESA_CALLBACK_URL")
+        error_msg = f"M-Pesa configuration incomplete. Missing: {', '.join(missing)}"
+        logger.error(error_msg)
         return {
             "errorCode": "500",
-            "errorMessage": "M-Pesa configuration incomplete"
+            "errorMessage": error_msg
         }
     
-    # 1. Access Token
-    try:
-        access_token = get_access_token()
-    except HTTPException as e:
-        logger.error(f"Failed to get access token: {e.detail}")
-        return {
-            "errorCode": "500",
-            "errorMessage": f"Authentication failed: {e.detail}"
-        }
+    # 1. Get Access Token
+    access_token, token_error = get_access_token()
+    if token_error:
+        return token_error
     
     timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
     
@@ -111,9 +123,6 @@ def initiate_stk_push(phone: str, amount: int, invoice_no: str):
     
     headers = {"Authorization": f"Bearer {access_token}"}
     
-    # Get callback URL from environment, fallback to a default
-    callback_url = os.getenv("MPESA_CALLBACK_URL", "https://REPLACE_WITH_YOUR_DOMAIN.com/api/orders/mpesa/callback")
-    
     payload = {
         "BusinessShortCode": BUSINESS_SHORTCODE,
         "Password": password,
@@ -123,7 +132,7 @@ def initiate_stk_push(phone: str, amount: int, invoice_no: str):
         "PartyA": clean_phone, 
         "PartyB": BUSINESS_SHORTCODE,
         "PhoneNumber": clean_phone,
-        "CallBackURL": callback_url, 
+        "CallBackURL": CALLBACK_URL, 
         "AccountReference": invoice_no,
         "TransactionDesc": "Beauty Shop Purchase"
     }
